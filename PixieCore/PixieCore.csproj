@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Pixie.Core</RootNamespace>
+    <LangVersion>latest</LangVersion>
+
+    <PackageId>Pixie</PackageId>
+    <Version>1.0.5</Version>
+    <Authors>Vodyanov Vyacheslav</Authors>
+    <Company>CPITeam</Company>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <WarningLevel>2</WarningLevel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DryIoc" Version="4.0.4" />
+    <PackageReference Include="NCrontab" Version="3.3.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+  </ItemGroup>
+
+</Project>
