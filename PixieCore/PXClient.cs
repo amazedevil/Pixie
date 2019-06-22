@@ -54,9 +54,10 @@ namespace Pixie.Core {
         public void Process() {
             try {
                 if (StreamReader.HasMessages) {
-                    this.container.Middlewares().HandleMessagesOverMiddlewares(
-                        CreateMessageHandler(StreamReader.DequeueMessage()),
-                        this.CreateMessageContainer()
+                    this.container.Middlewares().HandleOverMiddlewares(
+                        delegate(IContainer ctr) { CreateMessageHandler(StreamReader.DequeueMessage()).Handle(ctr); },
+                        this.CreateMessageContainer(),
+                        PXMiddlewareService.Type.Message
                     );
                 }
             } catch (Exception e) {

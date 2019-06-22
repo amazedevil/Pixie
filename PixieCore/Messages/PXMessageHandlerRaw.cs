@@ -15,9 +15,9 @@ namespace Pixie.Core.Messages {
             this.data = data;
         }
 
-        public PXMessageHandlerRaw SetupContainer(IContainer container) {
+        public void Handle(IContainer container) {
             this.container = container;
-            return this;
+            Handle();
         }
 
         public virtual void Handle() {}

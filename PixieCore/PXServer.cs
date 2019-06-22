@@ -70,9 +70,10 @@ namespace Pixie.Core {
             Type messageHandlerType = GetDisconnectMessageHandlerType();
 
             if (messageHandlerType != null) {
-                this.container.Middlewares().HandleMessagesOverMiddlewares(
-                    Activator.CreateInstance(messageHandlerType) as PXMessageHandlerRaw,
-                    this.container.CreateFacade()
+                this.container.Middlewares().HandleOverMiddlewares(
+                    delegate(IContainer ctr) { (Activator.CreateInstance(messageHandlerType) as PXMessageHandlerRaw).Handle(ctr); },
+                    this.container.CreateFacade(),
+                    PXMiddlewareService.Type.Message
                 );
             }
 
@@ -106,12 +107,14 @@ namespace Pixie.Core {
             this.container.Logger().Info(
                 "Command sent to clients: " + 
                 message.GetType()
-                .GetField(PXMessageInfo.MESSAGE_CLASS_FIELD_NAME)
-                .GetValue(null) as string
+                    .GetField(PXMessageInfo.MESSAGE_CLASS_FIELD_NAME)
+                    .GetValue(null) as string
             );
 
             foreach (var id in clientIds) {
-                clients[id].Send(message);
+                if (clients.ContainsKey(id)) {
+                    clients[id].Send(message);
+                }
             }
         }
 

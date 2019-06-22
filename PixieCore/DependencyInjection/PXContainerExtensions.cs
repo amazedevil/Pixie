@@ -29,5 +29,9 @@ namespace Pixie.Core.DependencyInjection {
         public static PXSchedulerService SchedulerService(this IContainer container) {
             return container.Resolve<PXSchedulerService>();
         }
+
+        public static IPXMessageSenderService Sender(this IContainer container) {
+            return container.Resolve<IPXMessageSenderService>();
+        }
     }
 }
