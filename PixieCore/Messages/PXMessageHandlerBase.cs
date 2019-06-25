@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace Pixie.Core.Messages {
-    public class PXMessageHandlerBase<T> : PXMessageHandlerRaw {
+    public class PXMessageHandlerBase<T> : PXMessageHandlerRaw where T : struct {
         public new static string MessageName
         {
             get {
@@ -16,7 +16,9 @@ namespace Pixie.Core.Messages {
         public virtual void Handle(T data) {}
 
         public override void Handle() {
-            Handle((T)data);
+            if (data != null) {
+                Handle((T)data);
+            }
         }
     }
 }

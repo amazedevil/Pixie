@@ -32,9 +32,7 @@ namespace Pixie.Core {
             this.container = CreateContainer(options);
         }
 
-        public async void Start() {
-            this.container.Logger().Info("Starting socket server");
-
+        public void Start() {
             foreach (var module in GetServiceProviders()) {
                 module.OnBoot(this.container);
             }
@@ -43,6 +41,8 @@ namespace Pixie.Core {
                 module.OnPostBoot(this.container);
             }
 
+            this.container.Logger().Info("Starting socket server");
+
             this.container.SchedulerService().Launch();
 
             try {
@@ -50,7 +50,13 @@ namespace Pixie.Core {
                 tcpListener.Start();
 
                 while (true) {
-                    PXClient client = new PXClient(await tcpListener.AcceptTcpClientAsync(), this.container, this.GetMessageHandlerTypes());
+                    PXClient client = new PXClient(
+                        tcpListener.AcceptTcpClientAsync().GetAwaiter().GetResult(),
+                        this.container,
+                        this.GetMessageHandlerTypes()
+                    );
+
+                    client.Start();
 
                     this.container.Logger().Info("Connecting client id: " + client.Id);
 
@@ -93,10 +99,12 @@ namespace Pixie.Core {
         private Container CreateContainer(IPXInitialOptionsService options) {
             var container = new Container();
 
-            container.Use(new PXEnvironmentService());
             container.Use<IPXMessageSenderService>(this);
             container.Use(options);
-            container.Use(scheduler = new PXSchedulerService(container));
+
+            container.RegisterDelegate(r => new PXSchedulerService(r.Resolve<IContainer>()), Reuse.Singleton);
+            container.Register<PXMiddlewareService>(Reuse.Singleton);
+            container.Register<PXEnvironmentService>(Reuse.Singleton);
 
             return container;
         }

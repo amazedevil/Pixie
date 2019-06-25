@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 
 namespace Pixie.Core {
@@ -19,7 +20,7 @@ namespace Pixie.Core {
         private NetworkStream netStream;
         private TcpClient client;
         private Container container;
-        private Dictionary<Type, Type> messageHandlerMap;
+        private Dictionary<Type, Type> messageHandlerMap = new Dictionary<Type, Type>();
 
         public event Action<PXClient> OnDisconnect;
 
@@ -30,9 +31,11 @@ namespace Pixie.Core {
             client = tcpClient;
             netStream = client.GetStream();
 
-            messageHandlerMap = new Dictionary<Type, Type>();
             foreach (var t in messageHandlerTypes) {
-                messageHandlerMap[t.GetField(PXMessageInfo.MESSAGE_CLASS_FIELD_DATA_TYPE).GetValue(null) as Type] = t;
+                messageHandlerMap[t.GetProperty(
+                    PXMessageInfo.MESSAGE_CLASS_FIELD_DATA_TYPE, 
+                    BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy
+                ).GetValue(null) as Type] = t;
             }
 
             StreamReader = new PXMessageReader(netStream, messageHandlerMap.Keys.ToArray());
@@ -47,7 +50,9 @@ namespace Pixie.Core {
             StreamReader.OnStreamClose += delegate {
                 Close();
             };
+        }
 
+        public void Start() {
             StreamReader.StartReadingCycle();
         }
 
@@ -82,7 +87,9 @@ namespace Pixie.Core {
         }
 
         private PXMessageHandlerRaw CreateMessageHandler(object message) {
-            return (PXMessageHandlerRaw)Activator.CreateInstance(messageHandlerMap[message.GetType()]);
+            var handler = (PXMessageHandlerRaw)Activator.CreateInstance(messageHandlerMap[message.GetType()]);
+            handler.SetupData(message);
+            return handler;
         }
 
         private IContainer CreateMessageContainer() {

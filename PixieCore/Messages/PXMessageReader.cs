@@ -49,7 +49,7 @@ namespace Pixie.Core.Messages {
 
                     for (int i = 0; i < readCount; i++) {
                         if (buffer[i] == 0) {
-                            CommandFinished();
+                            MessageFinished();
                         } else {
                             accumulator.Add(buffer[i]);
                         }
@@ -59,6 +59,9 @@ namespace Pixie.Core.Messages {
                         OnDataAvailable?.Invoke(this);
                     }
                 }
+            } catch (ObjectDisposedException) {
+                //network stream seems to be closed, so we get this error,
+                //we excpect it, so do nothing
             } finally {
                 OnStreamClose?.Invoke(this);
             }
@@ -68,7 +71,7 @@ namespace Pixie.Core.Messages {
             return messages.Dequeue();
         }
 
-        private void CommandFinished() {
+        private void MessageFinished() {
             var obj = JObject.Parse(Encoding.UTF8.GetString(this.accumulator.ToArray()));
 
             messages.Enqueue(CreateMessage(

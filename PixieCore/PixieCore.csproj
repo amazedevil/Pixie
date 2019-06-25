@@ -6,9 +6,12 @@
     <LangVersion>latest</LangVersion>
 
     <PackageId>Pixie</PackageId>
-    <Version>1.0.11</Version>
+    <Version>1.0.21</Version>
     <Authors>Vodyanov Vyacheslav</Authors>
     <Company>CPITeam</Company>
+
+    <IncludeSymbols>true</IncludeSymbols>
+    <IncludeSource>True</IncludeSource>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

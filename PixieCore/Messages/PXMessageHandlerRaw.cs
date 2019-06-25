@@ -1,4 +1,5 @@
 ﻿using DryIoc;
+using Pixie.Core.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,6 +18,9 @@ namespace Pixie.Core.Messages {
 
         public void Handle(IContainer container) {
             this.container = container;
+
+            container.Logger().Info(string.Format("Handing message with " + this.GetType().ToString()));
+
             Handle();
         }
 
