@@ -43,8 +43,6 @@ namespace Pixie.Core {
 
             this.container.Logger().Info("Starting socket server");
 
-            this.container.SchedulerService().Launch();
-
             try {
                 tcpListener = new TcpListener(IPAddress.Any, this.container.InitialOptions().Port);
                 tcpListener.Start();
@@ -106,12 +104,15 @@ namespace Pixie.Core {
             container.Register<PXMiddlewareService>(Reuse.Singleton);
             container.Register<PXEnvironmentService>(Reuse.Singleton);
 
+            //Initialize in place some dependencies
+            container.Resolve<PXSchedulerService>().Launch();
+
             return container;
         }
 
         //IPXMessageSenderService
 
-        public void Send(ICollection<string> clientIds, object message) {
+        public void Send(IEnumerable<string> clientIds, object message) {
             this.container.Logger().Info(
                 "Command sent to clients: " + 
                 message.GetType()

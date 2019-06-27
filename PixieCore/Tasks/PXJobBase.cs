@@ -17,15 +17,23 @@ namespace Pixie.Core.Tasks {
         public virtual void Execute() { }
 
         public Task Execute(IJobExecutionContext context) {
-            this.container.Middlewares().HandleOverMiddlewares(
-                delegate(IContainer ctr) {
-                    this.container = ctr;
-                    this.Data = context.MergedJobDataMap;
-                    Execute();
-                },
-                (context.Scheduler.Context.Get(PXSchedulerService.SCHEDULER_SERVICE) as PXSchedulerService).CreateCommandContainer(),
-                PXMiddlewareService.Type.Scheduled
-            );
+            var originalContainer = (context.Scheduler.Context.Get(PXSchedulerService.SCHEDULER_SERVICE) as PXSchedulerService).CreateJobContainer();
+
+            try {
+                originalContainer.Logger().Info("Executing Job " + this.GetType().ToString());
+
+                originalContainer.Middlewares().HandleOverMiddlewares(
+                    delegate (IContainer ctr) {
+                        this.container = ctr;
+                        this.Data = context.MergedJobDataMap;
+                        Execute();
+                    },
+                    originalContainer,
+                    PXMiddlewareService.Type.Scheduled
+                );
+            } catch (Exception e) {
+                originalContainer.Logger().Exception(e);
+            }
 
             return Task.CompletedTask;
         }

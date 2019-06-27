@@ -18,9 +18,9 @@ namespace Pixie.Core.Services {
         private IContainer container;
         private IScheduler scheduler;
 
-        internal PXSchedulerService(IContainer container) : base() {
+        public PXSchedulerService(IContainer container) : base() {
             this.container = container;
-            this.scheduler = CreateScheduler();
+            this.scheduler = GetScheduler();
 
             this.scheduler.Context.Add(SCHEDULER_SERVICE, this);
         }
@@ -29,12 +29,15 @@ namespace Pixie.Core.Services {
             this.scheduler.Start();
         }
 
-        internal IContainer CreateCommandContainer() {
+        internal IContainer CreateJobContainer() {
             return this.container.CreateFacade();
         }
 
-        private IScheduler CreateScheduler() {
+        private IScheduler GetScheduler() {
             NameValueCollection props = new NameValueCollection {
+                { "quartz.scheduler.instanceName", "PixieScheduler" },
+                { "quartz.threadPool.threadCount", "10" },
+                { "quartz.jobStore.misfireThreshold", "60000" }
             };
 
             StdSchedulerFactory factory = new StdSchedulerFactory(props);

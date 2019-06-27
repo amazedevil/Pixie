@@ -17,6 +17,7 @@ namespace Pixie.Core.Messages {
 
         public event Action<PXMessageReader> OnDataAvailable;
         public event Action<PXMessageReader> OnStreamClose;
+        public event Action<PXMessageReader, Exception> OnStreamError;
 
         private byte[] buffer = new byte[READ_BUFFER_SIZE];
 
@@ -62,6 +63,10 @@ namespace Pixie.Core.Messages {
             } catch (ObjectDisposedException) {
                 //network stream seems to be closed, so we get this error,
                 //we excpect it, so do nothing
+            } catch (System.IO.IOException) {
+                //that happens sometimes, if user closes connection
+            } catch (Exception e) {
+                OnStreamError?.Invoke(this, e);
             } finally {
                 OnStreamClose?.Invoke(this);
             }

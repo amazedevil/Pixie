@@ -50,6 +50,10 @@ namespace Pixie.Core {
             StreamReader.OnStreamClose += delegate {
                 Close();
             };
+
+            StreamReader.OnStreamError += delegate (PXMessageReader r, Exception e) {
+                container.Logger().Exception(e);
+            };
         }
 
         public void Start() {

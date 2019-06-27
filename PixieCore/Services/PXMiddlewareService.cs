@@ -41,7 +41,7 @@ namespace Pixie.Core.Services {
         internal void HandleOverMiddlewares(Action<IContainer> handler, IContainer container, PXMiddlewareService.Type type) {
             ApplyMiddlewares(
                 this.GetMiddlewares(type),
-                delegate (IContainer ctr) { handler(ctr); },
+                handler,
                 container
             );
         }
