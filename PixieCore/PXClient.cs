@@ -63,16 +63,31 @@ namespace Pixie.Core {
         public void Process() {
             try {
                 if (StreamReader.HasMessages) {
-                    this.container.Middlewares().HandleOverMiddlewares(
-                        delegate(IContainer ctr) { CreateMessageHandler(StreamReader.DequeueMessage()).Handle(ctr); },
-                        this.CreateMessageContainer(),
-                        PXMiddlewareService.Type.Message
-                    );
+                    this.ExecuteInMessageScope(delegate(IResolverContext messageContext) {
+                        this.container.Middlewares().HandleOverMiddlewares(
+                            delegate(IResolverContext ctx) { CreateMessageHandler(StreamReader.DequeueMessage()).Handle(ctx); },
+                            messageContext,
+                            PXMiddlewareService.Type.Message
+                        );
+                    });
+                    
                 }
             } catch (Exception e) {
                 this.container.Logger().Exception(e);
 
                 Close();
+            }
+        }
+
+        public void ProcessClosingMessage(Type closeMessageHandlerType) {
+            if (closeMessageHandlerType != null) {
+                this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
+                    this.container.Middlewares().HandleOverMiddlewares(
+                        delegate (IResolverContext ctx) { (Activator.CreateInstance(closeMessageHandlerType) as PXMessageHandlerRaw).Handle(ctx); },
+                        messageContext,
+                        PXMiddlewareService.Type.Message
+                    );
+                });
             }
         }
 
@@ -96,12 +111,12 @@ namespace Pixie.Core {
             return handler;
         }
 
-        private IContainer CreateMessageContainer() {
-            var commandContainer = this.container.CreateFacade();
+        private void ExecuteInMessageScope(Action<IResolverContext> action) {
+            using (var messageContext = this.container.OpenScope()) {
+                messageContext.Use<IPXClientService>(this);
 
-            commandContainer.Use<IPXClientService>(this);
-
-            return commandContainer;
+                action(messageContext);
+            }
         }
     }
 }

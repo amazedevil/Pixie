@@ -10,16 +10,16 @@ namespace Pixie.Core.Messages {
         public static Type DataType { get { return null; } }
 
         protected object data;
-        protected IContainer container;
+        protected IResolverContext context;
 
         public virtual void SetupData(object data) {
             this.data = data;
         }
 
-        public void Handle(IContainer container) {
-            this.container = container;
+        public void Handle(IResolverContext context) {
+            this.context = context;
 
-            container.Logger().Info(string.Format("Handing message with " + this.GetType().ToString()));
+            context.Logger().Info(string.Format("Handing message with " + this.GetType().ToString()));
 
             Handle();
         }

@@ -10,30 +10,33 @@ using System.Threading.Tasks;
 
 namespace Pixie.Core.Tasks {
     public class PXJobBase : IJob {
-        protected IContainer container;
+        protected IResolverContext context;
 
         protected JobDataMap Data { get; private set; }
 
         public virtual void Execute() { }
 
         public Task Execute(IJobExecutionContext context) {
-            var originalContainer = (context.Scheduler.Context.Get(PXSchedulerService.SCHEDULER_SERVICE) as PXSchedulerService).CreateJobContainer();
+            var scheduleService = (context.Scheduler.Context.Get(PXSchedulerService.SCHEDULER_SERVICE) as PXSchedulerService);
 
-            try {
-                originalContainer.Logger().Info("Executing Job " + this.GetType().ToString());
+            scheduleService.ExecuteInJobScope(delegate(IResolverContext jobContext) {
+                try {
+                    jobContext.Logger().Info("Executing Job " + this.GetType().ToString());
 
-                originalContainer.Middlewares().HandleOverMiddlewares(
-                    delegate (IContainer ctr) {
-                        this.container = ctr;
-                        this.Data = context.MergedJobDataMap;
-                        Execute();
-                    },
-                    originalContainer,
-                    PXMiddlewareService.Type.Scheduled
-                );
-            } catch (Exception e) {
-                originalContainer.Logger().Exception(e);
-            }
+                    jobContext.Middlewares().HandleOverMiddlewares(
+                        delegate (IResolverContext ctx) {
+                            this.context = ctx;
+                            this.Data = context.MergedJobDataMap;
+                            Execute();
+                        },
+                        jobContext,
+                        PXMiddlewareService.Type.Scheduled
+                    );
+                } catch (Exception e) {
+                    jobContext.Logger().Exception(e);
+                }
+            });
+            
 
             return Task.CompletedTask;
         }

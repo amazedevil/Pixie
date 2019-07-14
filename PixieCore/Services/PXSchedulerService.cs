@@ -29,8 +29,10 @@ namespace Pixie.Core.Services {
             this.scheduler.Start();
         }
 
-        internal IContainer CreateJobContainer() {
-            return this.container.CreateFacade();
+        internal void ExecuteInJobScope(Action<IResolverContext> action) {
+            using (var jobContext = this.container.OpenScope()) {
+                action(jobContext);
+            }
         }
 
         private IScheduler GetScheduler() {

@@ -13,7 +13,6 @@ namespace Pixie.Core {
     public class PXServer : IPXMessageSenderService {
         private TcpListener tcpListener;
         private IDictionary<string, PXClient> clients = new ConcurrentDictionary<string, PXClient>();
-        private PXSchedulerService scheduler;
         private Container container;
 
         protected virtual IPXServiceProvider[] GetServiceProviders() {
@@ -59,7 +58,7 @@ namespace Pixie.Core {
                     this.container.Logger().Info("Connecting client id: " + client.Id);
 
                     client.OnDisconnect += delegate (PXClient c) {
-                        DisconnectClient(c.Id);
+                        DisconnectClient(c);
                     };
 
                     clients[client.Id] = client;
@@ -70,18 +69,9 @@ namespace Pixie.Core {
             }
         }
 
-        private void DisconnectClient(string clientId) {
-            Type messageHandlerType = GetDisconnectMessageHandlerType();
-
-            if (messageHandlerType != null) {
-                this.container.Middlewares().HandleOverMiddlewares(
-                    delegate(IContainer ctr) { (Activator.CreateInstance(messageHandlerType) as PXMessageHandlerRaw).Handle(ctr); },
-                    this.container.CreateFacade(),
-                    PXMiddlewareService.Type.Message
-                );
-            }
-
-            clients.Remove(clientId);
+        private void DisconnectClient(PXClient client) {
+            client.ProcessClosingMessage(GetDisconnectMessageHandlerType());
+            clients.Remove(client.Id);
         }
 
         protected internal void Disconnect() {

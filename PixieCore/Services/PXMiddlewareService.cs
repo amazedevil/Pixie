@@ -38,28 +38,28 @@ namespace Pixie.Core.Services {
             schedulerMiddlewares.Remove(middleware);
         }
 
-        internal void HandleOverMiddlewares(Action<IContainer> handler, IContainer container, PXMiddlewareService.Type type) {
+        internal void HandleOverMiddlewares(Action<IResolverContext> handler, IResolverContext context, PXMiddlewareService.Type type) {
             ApplyMiddlewares(
                 this.GetMiddlewares(type),
                 handler,
-                container
+                context
             );
         }
 
-        internal void ApplyMiddlewares(IEnumerable<IPXMiddleware> middlewares, Action<IContainer> endOfChain, IContainer container) {
-            Action<IContainer> action = delegate (IContainer ctr) {
-                endOfChain(ctr);
+        internal void ApplyMiddlewares(IEnumerable<IPXMiddleware> middlewares, Action<IResolverContext> endOfChain, IResolverContext context) {
+            Action<IResolverContext> action = delegate (IResolverContext ctx) {
+                endOfChain(ctx);
             };
 
             foreach (IPXMiddleware middleware in middlewares.Reverse()) {
                 var previousAction = action;
 
-                action = delegate (IContainer ctr) {
-                    middleware.Handle(ctr, previousAction);
+                action = delegate (IResolverContext ctx) {
+                    middleware.Handle(ctx, previousAction);
                 };
             }
 
-            action(container);
+            action(context);
         }
 
         internal IEnumerable<IPXMiddleware> GetMiddlewares(Type type) {

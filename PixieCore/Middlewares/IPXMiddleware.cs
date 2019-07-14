@@ -5,6 +5,6 @@ using System.Text;
 
 namespace Pixie.Core.Middlewares {
     public interface IPXMiddleware {
-        void Handle(IContainer container, Action<IContainer> next);
+        void Handle(IResolverContext context, Action<IResolverContext> next);
     }
 }
