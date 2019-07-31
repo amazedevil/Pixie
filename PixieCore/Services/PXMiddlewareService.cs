@@ -12,11 +12,13 @@ namespace Pixie.Core.Services {
         public enum Type {
             Universal,
             Scheduled,
-            Message
+            Message,
+            Cli
         }
 
         private List<IPXMiddleware> schedulerMiddlewares = new List<IPXMiddleware>();
         private List<IPXMiddleware> messageMiddlewares = new List<IPXMiddleware>();
+        private List<IPXMiddleware> cliCommandMiddlewares = new List<IPXMiddleware>();
 
         public void AddMiddleware(IPXMiddleware middleware, Type type) {
             switch (type) {
@@ -26,9 +28,13 @@ namespace Pixie.Core.Services {
                 case Type.Scheduled:
                     schedulerMiddlewares.Add(middleware);
                     break;
+                case Type.Cli:
+                    cliCommandMiddlewares.Add(middleware);
+                    break;
                 case Type.Universal:
                     schedulerMiddlewares.Add(middleware);
                     messageMiddlewares.Add(middleware);
+                    cliCommandMiddlewares.Add(middleware);
                     break;
             }
         }
@@ -36,6 +42,7 @@ namespace Pixie.Core.Services {
         public void RemoveMiddleware(IPXMiddleware middleware) {
             messageMiddlewares.Remove(middleware);
             schedulerMiddlewares.Remove(middleware);
+            cliCommandMiddlewares.Remove(middleware);
         }
 
         internal void HandleOverMiddlewares(Action<IResolverContext> handler, IResolverContext context, PXMiddlewareService.Type type) {
@@ -68,6 +75,8 @@ namespace Pixie.Core.Services {
                     return schedulerMiddlewares;
                 case Type.Message:
                     return messageMiddlewares;
+                case Type.Cli:
+                    return cliCommandMiddlewares;
             }
 
             throw new NotSupportedException(); //TODO: throw something better

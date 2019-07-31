@@ -1,4 +1,5 @@
 ﻿using DryIoc;
+using Pixie.Core.Cli;
 using Pixie.Core.DependencyInjection;
 using Pixie.Core.Messages;
 using Pixie.Core.ServiceProviders;
@@ -14,6 +15,7 @@ namespace Pixie.Core {
         private TcpListener tcpListener;
         private IDictionary<string, PXClient> clients = new ConcurrentDictionary<string, PXClient>();
         private Container container;
+        private PXCliServer server;
 
         protected virtual IPXServiceProvider[] GetServiceProviders() {
             return new IPXServiceProvider[] {};
@@ -25,6 +27,10 @@ namespace Pixie.Core {
 
         protected virtual Type GetDisconnectMessageHandlerType() {
             return null;
+        }
+
+        protected virtual Type[] GetCliCommandTypes() {
+            return new Type[] {};
         }
 
         public PXServer(IPXInitialOptionsService options) {
@@ -39,6 +45,8 @@ namespace Pixie.Core {
             foreach (var module in GetServiceProviders()) {
                 module.OnPostBoot(this.container);
             }
+
+            StartCliServer();
 
             this.container.Logger().Info("Starting socket server");
 
@@ -72,6 +80,16 @@ namespace Pixie.Core {
         private void DisconnectClient(PXClient client) {
             client.ProcessClosingMessage(GetDisconnectMessageHandlerType());
             clients.Remove(client.Id);
+        }
+
+        private void StartCliServer() {
+            var commandTypes = GetCliCommandTypes();
+
+            if (commandTypes.Length == 0) {
+                return;
+            }
+
+            server = new PXCliServer(commandTypes, this.container);
         }
 
         protected internal void Disconnect() {

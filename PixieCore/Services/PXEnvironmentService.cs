@@ -18,7 +18,11 @@ namespace Pixie.Core.Services {
             }
         }
 
-        public string GetString(string key) {
+        public string GetString(string key, string defaultValue = null) {
+            if (!items.ContainsKey(key)) {
+                return defaultValue;
+            }
+
             return (string)items[key];
         }
 
