@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO.Pipes;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Pixie.Core.Cli {
     public class PXCliClient {
@@ -14,7 +15,7 @@ namespace Pixie.Core.Cli {
             Console.Write(s);
         }
 
-        public async void Send(PXCliCommand command) {
+        public async Task Send(PXCliCommand command) {
             using (var pipe = new NamedPipeClientStream(env.GetString(PXCliConsts.PX_ENV_CLI_PIPE_NAME_PARAMETER, PXCliConsts.PX_ENV_CLI_PIPE_NAME_DEFAULT))) {
                 await pipe.ConnectAsync();
 
