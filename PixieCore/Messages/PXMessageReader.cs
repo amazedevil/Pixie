@@ -13,7 +13,7 @@ namespace Pixie.Core.Messages {
         private List<byte> accumulator = new List<byte>();
         private Queue<object> messages = new Queue<object>();
 
-        private Dictionary<string, Type> messageTypes;
+        private Dictionary<int, Type> messageTypes;
 
         public event Action<PXMessageReader> OnDataAvailable;
         public event Action<PXMessageReader> OnStreamClose;
@@ -29,9 +29,9 @@ namespace Pixie.Core.Messages {
         public PXMessageReader(NetworkStream stream, Type[] messageTypes) {
             this.stream = stream;
 
-            this.messageTypes = new Dictionary<string, Type>();
+            this.messageTypes = new Dictionary<int, Type>();
             foreach (var t in messageTypes) {
-                this.messageTypes[(string)t.GetField(PXMessageInfo.MESSAGE_CLASS_FIELD_NAME).GetValue(null)] = t;
+                this.messageTypes[PXMessageInfo.GetMessageTypeHashCode(t)] = t;
             }
         }
 
@@ -80,15 +80,15 @@ namespace Pixie.Core.Messages {
             var obj = JObject.Parse(Encoding.UTF8.GetString(this.accumulator.ToArray()));
 
             messages.Enqueue(CreateMessage(
-                obj[PXMessageInfo.MESSAGE_SERIALIZATION_FIELD_NAME].ToString(),
+                obj[PXMessageInfo.MESSAGE_SERIALIZATION_FIELD_NAME].Value<int>(),
                 obj[PXMessageInfo.MESSAGE_SERIALIZATION_FIELD_BODY] as JObject
             ));
 
             accumulator.Clear();
         }
 
-        private object CreateMessage(string name, JObject body) {
-            return body.ToObject(messageTypes[name]);
+        private object CreateMessage(int hash, JObject body) {
+            return body.ToObject(messageTypes[hash]);
         }
     }
 }

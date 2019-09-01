@@ -122,10 +122,7 @@ namespace Pixie.Core {
 
         public void Send(IEnumerable<string> clientIds, object message) {
             this.container.Logger().Info(
-                "Command sent to clients: " + 
-                message.GetType()
-                    .GetField(PXMessageInfo.MESSAGE_CLASS_FIELD_NAME)
-                    .GetValue(null) as string
+                "Command sent to clients: " + message.GetType().ToString()
             );
 
             foreach (var id in clientIds) {

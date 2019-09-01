@@ -14,9 +14,9 @@ namespace Pixie.Core.Messages {
         }
 
         public void Send(object message) {
-            JObject obj = JObject.FromObject(new {
-                message = message.GetType().GetField(PXMessageInfo.MESSAGE_CLASS_FIELD_NAME).GetValue(null) as string,
-                body = message
+            JObject obj = JObject.FromObject(new Dictionary<string, object> {
+                { PXMessageInfo.MESSAGE_SERIALIZATION_FIELD_NAME, PXMessageInfo.GetMessageTypeHashCode(message.GetType()) },
+                { PXMessageInfo.MESSAGE_SERIALIZATION_FIELD_BODY, message },
             });
 
             string objAsString = obj.ToString(Newtonsoft.Json.Formatting.None);

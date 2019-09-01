@@ -6,7 +6,6 @@ using System.Text;
 
 namespace Pixie.Core.Messages {
     public class PXMessageHandlerRaw {
-        public static string MessageName { get { throw new NotSupportedException(); } }
         public static Type DataType { get { return null; } }
 
         protected object data;
