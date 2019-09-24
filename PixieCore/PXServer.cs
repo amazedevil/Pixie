@@ -61,15 +61,15 @@ namespace Pixie.Core {
                         this.GetMessageHandlerTypes()
                     );
 
-                    client.Start();
-
-                    this.container.Logger().Info("Connecting client id: " + client.Id);
+                    clients[client.Id] = client;
 
                     client.OnDisconnect += delegate (PXClient c) {
                         DisconnectClient(c);
                     };
 
-                    clients[client.Id] = client;
+                    client.Start();
+
+                    this.container.Logger().Info("Connecting client id: " + client.Id);
                 }
             } catch (Exception ex) {
                 this.container.Logger().Exception(ex);
