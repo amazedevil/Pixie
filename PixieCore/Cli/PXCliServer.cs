@@ -33,21 +33,25 @@ namespace Pixie.Core.Cli {
 
         private async void RunServer() {
             while (!isClosed) {
-                using (var pipe = new NamedPipeServerStream(pipeName)) {
-                    await pipe.WaitForConnectionAsync();
+                try {
+                    using (var pipe = new NamedPipeServerStream(pipeName)) {
+                        await pipe.WaitForConnectionAsync();
 
-                    PXCliCommand command = (PXCliCommand)formatter.Deserialize(pipe);
+                        PXCliCommand command = (PXCliCommand)formatter.Deserialize(pipe);
 
-                    string output = "";
+                        string output = "";
 
-                    ExecuteInCliScope(delegate (IResolverContext context) {
-                        this.container.Middlewares().HandleOverMiddlewares(delegate (IResolverContext ctx) {
-                            command.Execute(ctx);
-                            output = command.FlushOutput();
-                        }, context, Services.PXMiddlewareService.Type.Cli);
-                    });
+                        ExecuteInCliScope(delegate (IResolverContext context) {
+                            this.container.Middlewares().HandleOverMiddlewares(delegate (IResolverContext ctx) {
+                                command.Execute(ctx);
+                                output = command.FlushOutput();
+                            }, context, Services.PXMiddlewareService.Type.Cli);
+                        });
 
-                    formatter.Serialize(pipe, output);
+                        formatter.Serialize(pipe, output);
+                    }
+                } catch (Exception e) {
+                    container.Logger().Exception(e);
                 }
             }
         }

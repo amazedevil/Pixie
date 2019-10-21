@@ -21,6 +21,7 @@ namespace Pixie.Core {
         private TcpClient client;
         private Container container;
         private Dictionary<Type, Type> messageHandlerMap = new Dictionary<Type, Type>();
+        private HashSet<int> subscriptions = new HashSet<int>();
 
         public event Action<PXClient> OnDisconnect;
 
@@ -79,6 +80,10 @@ namespace Pixie.Core {
             }
         }
 
+        public bool IsSubscribed(int subscriptionId) {
+            return subscriptions.Contains(subscriptionId);
+        }
+
         public void ProcessClosingMessage(Type closeMessageHandlerType) {
             if (closeMessageHandlerType != null) {
                 this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
@@ -89,10 +94,6 @@ namespace Pixie.Core {
                     );
                 });
             }
-        }
-
-        public void Send(object message) {
-            this.StreamWriter.Send(message);
         }
 
         protected internal void Close() {
@@ -118,5 +119,21 @@ namespace Pixie.Core {
                 action(messageContext);
             }
         }
+
+        //IPXClientService
+
+        public void Send(object message) {
+            this.StreamWriter.Send(message);
+        }
+
+        public void Subscribe(int subscriptionId) {
+            this.subscriptions.Add(subscriptionId);
+        }
+
+        public void Unsubscribe(int subscriptionId) {
+            this.subscriptions.Remove(subscriptionId);
+        }
+
+        //////////////////
     }
 }

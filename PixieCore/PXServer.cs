@@ -7,6 +7,7 @@ using Pixie.Core.Services;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 
@@ -130,6 +131,10 @@ namespace Pixie.Core {
                     clients[id].Send(message);
                 }
             }
+        }
+
+        public void Send(IEnumerable<string> clientIds, object data, int subscriptionId) {
+            this.Send(clientIds.Where(cid => clients.ContainsKey(cid) && clients[cid].IsSubscribed(subscriptionId)), data);
         }
 
         /////////////////////////
