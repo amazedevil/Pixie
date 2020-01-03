@@ -1,15 +1,18 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 
-namespace Pixie.Core.Messages {
-    internal class PXMessageWriter {
+namespace Pixie.Core.Messages
+{
+    internal class PXMessageWriter
+    {
 
-        private NetworkStream stream;
+        private Stream stream;
 
-        public PXMessageWriter(NetworkStream stream) {
+        public PXMessageWriter(Stream stream) {
             this.stream = stream;
         }
 

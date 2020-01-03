@@ -7,47 +7,42 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Pixie.Core.Services {
-    public class PXMiddlewareService {
-        public enum Type {
-            Universal,
-            Scheduled,
-            Message,
-            Cli
+namespace Pixie.Core.Services
+{
+    public class PXMiddlewareService
+    {
+
+        [Flags]
+        public enum Scope
+        {
+            Message = 1,
+            Scheduled = 2,
+            Cli = 4,
+            Universal = Message | Scheduled | Cli
         }
 
-        private List<IPXMiddleware> schedulerMiddlewares = new List<IPXMiddleware>();
-        private List<IPXMiddleware> messageMiddlewares = new List<IPXMiddleware>();
-        private List<IPXMiddleware> cliCommandMiddlewares = new List<IPXMiddleware>();
+        private struct MiddlewareWrapper
+        {
+            public IPXMiddleware middleware;
+            public Scope scope;
+        }
 
-        public void AddMiddleware(IPXMiddleware middleware, Type type) {
-            switch (type) {
-                case Type.Message:
-                    messageMiddlewares.Add(middleware);
-                    break;
-                case Type.Scheduled:
-                    schedulerMiddlewares.Add(middleware);
-                    break;
-                case Type.Cli:
-                    cliCommandMiddlewares.Add(middleware);
-                    break;
-                case Type.Universal:
-                    schedulerMiddlewares.Add(middleware);
-                    messageMiddlewares.Add(middleware);
-                    cliCommandMiddlewares.Add(middleware);
-                    break;
-            }
+        private List<MiddlewareWrapper> middlewares = new List<MiddlewareWrapper>();
+
+        public void AddMiddleware(IPXMiddleware middleware, Scope scope) {
+            middlewares.Add(new MiddlewareWrapper() {
+                middleware = middleware,
+                scope = scope
+            });
         }
 
         public void RemoveMiddleware(IPXMiddleware middleware) {
-            messageMiddlewares.Remove(middleware);
-            schedulerMiddlewares.Remove(middleware);
-            cliCommandMiddlewares.Remove(middleware);
+            middlewares.RemoveAll(m => Object.ReferenceEquals(m, middleware));
         }
 
-        internal void HandleOverMiddlewares(Action<IResolverContext> handler, IResolverContext context, PXMiddlewareService.Type type) {
+        internal void HandleOverMiddlewares(Action<IResolverContext> handler, IResolverContext context, Scope scope) {
             ApplyMiddlewares(
-                this.GetMiddlewares(type),
+                this.GetMiddlewares(scope),
                 handler,
                 context
             );
@@ -69,17 +64,8 @@ namespace Pixie.Core.Services {
             action(context);
         }
 
-        internal IEnumerable<IPXMiddleware> GetMiddlewares(Type type) {
-            switch (type) {
-                case Type.Scheduled:
-                    return schedulerMiddlewares;
-                case Type.Message:
-                    return messageMiddlewares;
-                case Type.Cli:
-                    return cliCommandMiddlewares;
-            }
-
-            throw new NotSupportedException(); //TODO: throw something better
+        internal IEnumerable<IPXMiddleware> GetMiddlewares(Scope scope) {
+            return this.middlewares.Where(m => m.scope.HasFlag(scope)).Select(m => m.middleware);
         }
     }
 }

@@ -6,8 +6,10 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Pixie.Core.Cli {
-    public class PXCliClient {
+namespace Pixie.Core.Cli
+{
+    public class PXCliClient
+    {
         private PXEnvironmentService env = new PXEnvironmentService();
         private BinaryFormatter formatter = new BinaryFormatter();
 

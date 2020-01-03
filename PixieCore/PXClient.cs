@@ -11,8 +11,10 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
 
-namespace Pixie.Core {
-    class PXClient : IPXClientService {
+namespace Pixie.Core
+{
+    class PXClient : IPXClientService
+    {
         public string Id { get; private set; }
         public PXMessageReader StreamReader { get; private set; }
         public PXMessageWriter StreamWriter { get; private set; }
@@ -34,7 +36,7 @@ namespace Pixie.Core {
 
             foreach (var t in messageHandlerTypes) {
                 messageHandlerMap[t.GetProperty(
-                    PXMessageInfo.MESSAGE_CLASS_FIELD_DATA_TYPE, 
+                    PXMessageInfo.MESSAGE_CLASS_FIELD_DATA_TYPE,
                     BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy
                 ).GetValue(null) as Type] = t;
             }
@@ -64,14 +66,14 @@ namespace Pixie.Core {
         public void Process() {
             try {
                 if (StreamReader.HasMessages) {
-                    this.ExecuteInMessageScope(delegate(IResolverContext messageContext) {
+                    this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
                         this.container.Middlewares().HandleOverMiddlewares(
-                            delegate(IResolverContext ctx) { CreateMessageHandler(StreamReader.DequeueMessage()).Handle(ctx); },
+                            delegate (IResolverContext ctx) { CreateMessageHandler(StreamReader.DequeueMessage()).Handle(ctx); },
                             messageContext,
-                            PXMiddlewareService.Type.Message
+                            PXMiddlewareService.Scope.Message
                         );
                     });
-                    
+
                 }
             } catch (Exception e) {
                 this.container.Logger().Exception(e);
@@ -90,7 +92,7 @@ namespace Pixie.Core {
                     this.container.Middlewares().HandleOverMiddlewares(
                         delegate (IResolverContext ctx) { (Activator.CreateInstance(closeMessageHandlerType) as PXMessageHandlerRaw).Handle(ctx); },
                         messageContext,
-                        PXMiddlewareService.Type.Message
+                        PXMiddlewareService.Scope.Message
                     );
                 });
             }

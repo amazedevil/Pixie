@@ -4,6 +4,7 @@ using Pixie.Core.DependencyInjection;
 using Pixie.Core.Messages;
 using Pixie.Core.ServiceProviders;
 using Pixie.Core.Services;
+using Pixie.Core.Services.Stubs;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -11,19 +12,21 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 
-namespace Pixie.Core {
-    public class PXServer : IPXMessageSenderService {
+namespace Pixie.Core
+{
+    public class PXServer : IPXMessageSenderService
+    {
         private TcpListener tcpListener;
         private IDictionary<string, PXClient> clients = new ConcurrentDictionary<string, PXClient>();
         private Container container;
-        private PXCliServer server;
+        private PXCliServer cliServer = null;
 
         protected virtual IPXServiceProvider[] GetServiceProviders() {
-            return new IPXServiceProvider[] {};
+            return new IPXServiceProvider[] { };
         }
 
         protected virtual Type[] GetMessageHandlerTypes() {
-            return new Type[] {};
+            return new Type[] { };
         }
 
         protected virtual Type GetDisconnectMessageHandlerType() {
@@ -31,7 +34,7 @@ namespace Pixie.Core {
         }
 
         protected virtual Type[] GetCliCommandTypes() {
-            return new Type[] {};
+            return new Type[] { };
         }
 
         public PXServer(IPXInitialOptionsService options) {
@@ -70,7 +73,7 @@ namespace Pixie.Core {
 
                     client.Start();
 
-                    this.container.Logger().Info("Connecting client id: " + client.Id);
+                    this.container.Logger().Info("Connected client id: " + client.Id);
                 }
             } catch (Exception ex) {
                 this.container.Logger().Exception(ex);
@@ -90,21 +93,29 @@ namespace Pixie.Core {
                 return;
             }
 
-            server = new PXCliServer(commandTypes, this.container);
+            cliServer = new PXCliServer(commandTypes, this.container);
         }
 
         protected internal void Disconnect() {
-            this.container.Logger().Info("Stopping socket server");
+            this.container.Logger().Info("Stopping server");
 
             tcpListener.Stop();
 
             foreach (var client in clients) {
                 client.Value.Close();
             }
+
+            cliServer?.Stop();
         }
 
         private Container CreateContainer(IPXInitialOptionsService options) {
-            var container = new Container();
+            var stubs = new Container();
+
+            stubs.Register<IPXLoggerService, PXLoggerStub>();
+
+            var container = new Container(Rules.Default.WithUnknownServiceResolvers(r => {
+                return new DelegateFactory(delegate { return stubs.Resolve(r.ServiceType); });
+            }));
 
             container.Use<IPXMessageSenderService>(this);
             container.Use(options);

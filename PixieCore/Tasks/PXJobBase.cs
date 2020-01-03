@@ -8,8 +8,10 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Pixie.Core.Tasks {
-    public class PXJobBase : IJob {
+namespace Pixie.Core.Tasks
+{
+    public class PXJobBase : IJob
+    {
         protected IResolverContext context;
 
         protected JobDataMap Data { get; private set; }
@@ -19,7 +21,7 @@ namespace Pixie.Core.Tasks {
         public Task Execute(IJobExecutionContext context) {
             var scheduleService = (context.Scheduler.Context.Get(PXSchedulerService.SCHEDULER_SERVICE) as PXSchedulerService);
 
-            scheduleService.ExecuteInJobScope(delegate(IResolverContext jobContext) {
+            scheduleService.ExecuteInJobScope(delegate (IResolverContext jobContext) {
                 try {
                     jobContext.Logger().Info("Executing Job " + this.GetType().ToString());
 
@@ -30,13 +32,13 @@ namespace Pixie.Core.Tasks {
                             Execute();
                         },
                         jobContext,
-                        PXMiddlewareService.Type.Scheduled
+                        PXMiddlewareService.Scope.Scheduled
                     );
                 } catch (Exception e) {
                     jobContext.Logger().Exception(e);
                 }
             });
-            
+
 
             return Task.CompletedTask;
         }

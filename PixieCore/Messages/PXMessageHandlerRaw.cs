@@ -4,8 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Pixie.Core.Messages {
-    public class PXMessageHandlerRaw {
+namespace Pixie.Core.Messages
+{
+    public class PXMessageHandlerRaw
+    {
         public static Type DataType { get { return null; } }
 
         protected object data;
@@ -23,6 +25,6 @@ namespace Pixie.Core.Messages {
             Handle();
         }
 
-        public virtual void Handle() {}
+        public virtual void Handle() { }
     }
 }

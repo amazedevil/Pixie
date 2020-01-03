@@ -10,8 +10,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Pixie.Core.Services {
-    public class PXSchedulerService {
+namespace Pixie.Core.Services
+{
+    public class PXSchedulerService
+    {
 
         internal const string SCHEDULER_SERVICE = "scheduler_service";
 

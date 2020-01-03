@@ -1,15 +1,19 @@
 ﻿using Newtonsoft.Json.Linq;
+using Pixie.Core.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 
-namespace Pixie.Core.Messages {
-    public class PXMessageReader {
+namespace Pixie.Core.Messages
+{
+    internal class PXMessageReader
+    {
         private const int READ_BUFFER_SIZE = 128;
 
-        private NetworkStream stream;
+        private Stream stream;
         private List<byte> accumulator = new List<byte>();
         private Queue<object> messages = new Queue<object>();
 
@@ -26,7 +30,7 @@ namespace Pixie.Core.Messages {
             get { return messages.Count > 0; }
         }
 
-        public PXMessageReader(NetworkStream stream, Type[] messageTypes) {
+        public PXMessageReader(Stream stream, Type[] messageTypes) {
             this.stream = stream;
 
             this.messageTypes = new Dictionary<int, Type>();
@@ -63,7 +67,7 @@ namespace Pixie.Core.Messages {
             } catch (ObjectDisposedException) {
                 //network stream seems to be closed, so we get this error,
                 //we excpect it, so do nothing
-            } catch (System.IO.IOException) {
+            } catch (IOException) {
                 //that happens sometimes, if user closes connection
             } catch (Exception e) {
                 OnStreamError?.Invoke(this, e);
@@ -88,6 +92,10 @@ namespace Pixie.Core.Messages {
         }
 
         private object CreateMessage(int hash, JObject body) {
+            if (!messageTypes.ContainsKey(hash)) {
+                throw new PXUnregisteredMessageReceived(hash);
+            }
+
             return body.ToObject(messageTypes[hash]);
         }
     }

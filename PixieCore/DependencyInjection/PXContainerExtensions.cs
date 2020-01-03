@@ -4,8 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Pixie.Core.DependencyInjection {
-    public static class PXContainerExtensions {
+namespace Pixie.Core.DependencyInjection
+{
+    public static class PXContainerExtensions
+    {
         public static IPXLoggerService Logger(this IResolver resolver) {
             return resolver.Resolve<IPXLoggerService>();
         }

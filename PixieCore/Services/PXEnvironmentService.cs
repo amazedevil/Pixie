@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Pixie.Core.Services {
-    public class PXEnvironmentService {
+namespace Pixie.Core.Services
+{
+    public class PXEnvironmentService
+    {
         private JObject items;
 
         public PXEnvironmentService() {
