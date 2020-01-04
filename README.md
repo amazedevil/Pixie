@@ -43,7 +43,7 @@ class MyInitialOptions : IPXInitialOptionsService {
 }
 ```
 
-When it's ready, we run it:
+When it's ready, we can run it:
 
 ```csharp
 (new RTHSServer(new MyInitialOptions())).Start();
@@ -70,7 +70,7 @@ class MessageHandlerSaySomething : PXMessageHandlerBase<ServerMessageSaySomethin
 }
 ```
 
-So what about Unity side, first of all we should import package "PixieUnity.unitypackage" (link to be added).
+So what about Unity side, first of all we should import package [PixieUnity.unitypackage](https://github.com/amazedevil/PixieUnity/releases/) (or install client code somehow else, see [link](https://github.com/amazedevil/PixieUnity#installation) for details).
 
 Now we're adding PXUnityClient component to some game object. It has fields to be configured:
 
