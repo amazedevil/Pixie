@@ -8,5 +8,6 @@ namespace Pixie.Core.Services
     {
         void Send(IEnumerable<string> clientIds, object data);
         void Send(IEnumerable<string> clientIds, object data, int subscriptionId);
+        IEnumerable<string> GetClientIds();
     }
 }

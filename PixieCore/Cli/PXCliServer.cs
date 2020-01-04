@@ -12,20 +12,16 @@ namespace Pixie.Core.Cli
 {
     internal class PXCliServer
     {
-
         private Task task;
         private CancellationTokenSource cancellationTokenSource;
 
         private Container container;
 
         private string pipeName = PXCliConsts.PX_ENV_CLI_PIPE_NAME_DEFAULT;
-        private UnicodeEncoding streamEncoding = new UnicodeEncoding();
-        private Type[] commandTypes;
         private BinaryFormatter formatter = new BinaryFormatter();
 
-        internal PXCliServer(Type[] commandTypes, Container container) {
+        internal PXCliServer(Container container) {
             this.container = container;
-            this.commandTypes = commandTypes;
             pipeName = container.Env().GetString(PXCliConsts.PX_ENV_CLI_PIPE_NAME_PARAMETER, pipeName);
 
             cancellationTokenSource = new CancellationTokenSource();

@@ -33,8 +33,9 @@ namespace Pixie.Core
             return null;
         }
 
-        protected virtual Type[] GetCliCommandTypes() {
-            return new Type[] { };
+        protected virtual bool IsCliServerActive
+        {
+            get { return false; }
         }
 
         public PXServer(IPXInitialOptionsService options) {
@@ -87,13 +88,11 @@ namespace Pixie.Core
         }
 
         private void StartCliServer() {
-            var commandTypes = GetCliCommandTypes();
-
-            if (commandTypes.Length == 0) {
+            if (!IsCliServerActive) {
                 return;
             }
 
-            cliServer = new PXCliServer(commandTypes, this.container);
+            cliServer = new PXCliServer(this.container);
         }
 
         protected internal void Disconnect() {
@@ -146,6 +145,10 @@ namespace Pixie.Core
 
         public void Send(IEnumerable<string> clientIds, object data, int subscriptionId) {
             this.Send(clientIds.Where(cid => clients.ContainsKey(cid) && clients[cid].IsSubscribed(subscriptionId)), data);
+        }
+
+        public IEnumerable<string> GetClientIds() {
+            return clients.Keys;
         }
 
         /////////////////////////
