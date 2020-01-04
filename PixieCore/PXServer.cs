@@ -1,6 +1,5 @@
 ﻿using DryIoc;
 using Pixie.Core.Cli;
-using Pixie.Core.DependencyInjection;
 using Pixie.Core.Messages;
 using Pixie.Core.ServiceProviders;
 using Pixie.Core.Services;

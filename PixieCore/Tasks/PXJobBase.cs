@@ -1,5 +1,4 @@
 ﻿using DryIoc;
-using Pixie.Core.DependencyInjection;
 using Pixie.Core.Middlewares;
 using Pixie.Core.Services;
 using Quartz;

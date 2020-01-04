@@ -4,36 +4,33 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Pixie.Core.DependencyInjection
+public static class PXContainerExtensions
 {
-    public static class PXContainerExtensions
-    {
-        public static IPXLoggerService Logger(this IResolver resolver) {
-            return resolver.Resolve<IPXLoggerService>();
-        }
+    public static IPXLoggerService Logger(this IResolver resolver) {
+        return resolver.Resolve<IPXLoggerService>();
+    }
 
-        public static IPXInitialOptionsService InitialOptions(this IResolver resolver) {
-            return resolver.Resolve<IPXInitialOptionsService>();
-        }
+    public static IPXInitialOptionsService InitialOptions(this IResolver resolver) {
+        return resolver.Resolve<IPXInitialOptionsService>();
+    }
 
-        public static PXMiddlewareService Middlewares(this IResolver resolver) {
-            return resolver.Resolve<PXMiddlewareService>();
-        }
+    public static PXMiddlewareService Middlewares(this IResolver resolver) {
+        return resolver.Resolve<PXMiddlewareService>();
+    }
 
-        public static PXEnvironmentService Env(this IResolver resolver) {
-            return resolver.Resolve<PXEnvironmentService>();
-        }
+    public static PXEnvironmentService Env(this IResolver resolver) {
+        return resolver.Resolve<PXEnvironmentService>();
+    }
 
-        public static IPXClientService Client(this IResolver resolver) {
-            return resolver.Resolve<IPXClientService>();
-        }
+    public static IPXClientService Client(this IResolver resolver) {
+        return resolver.Resolve<IPXClientService>();
+    }
 
-        public static PXSchedulerService SchedulerService(this IResolver resolver) {
-            return resolver.Resolve<PXSchedulerService>();
-        }
+    public static PXSchedulerService SchedulerService(this IResolver resolver) {
+        return resolver.Resolve<PXSchedulerService>();
+    }
 
-        public static IPXMessageSenderService Sender(this IResolver resolver) {
-            return resolver.Resolve<IPXMessageSenderService>();
-        }
+    public static IPXMessageSenderService Sender(this IResolver resolver) {
+        return resolver.Resolve<IPXMessageSenderService>();
     }
 }

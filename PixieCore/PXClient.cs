@@ -1,6 +1,5 @@
 ﻿using DryIoc;
 using Newtonsoft.Json.Linq;
-using Pixie.Core.DependencyInjection;
 using Pixie.Core.Messages;
 using Pixie.Core.Middlewares;
 using Pixie.Core.Services;

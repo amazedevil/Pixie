@@ -1,5 +1,4 @@
 ﻿using DryIoc;
-using Pixie.Core.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.IO.Pipes;
