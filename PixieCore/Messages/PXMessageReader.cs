@@ -22,6 +22,7 @@ namespace Pixie.Core.Messages
         public event Action<PXMessageReader> OnDataAvailable;
         public event Action<PXMessageReader> OnStreamClose;
         public event Action<PXMessageReader, Exception> OnStreamError;
+        public event Action<PXMessageReader, string> OnRawMessageReady;
 
         private byte[] buffer = new byte[READ_BUFFER_SIZE];
 
@@ -81,7 +82,11 @@ namespace Pixie.Core.Messages
         }
 
         private void MessageFinished() {
-            var obj = JObject.Parse(Encoding.UTF8.GetString(this.accumulator.ToArray()));
+            var rawMessage = Encoding.UTF8.GetString(this.accumulator.ToArray());
+
+            this.OnRawMessageReady?.Invoke(this, rawMessage);
+
+            var obj = JObject.Parse(rawMessage);
 
             messages.Enqueue(CreateMessage(
                 obj[PXMessageInfo.MESSAGE_SERIALIZATION_FIELD_NAME].Value<int>(),

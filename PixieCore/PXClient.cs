@@ -49,6 +49,10 @@ namespace Pixie.Core
                 Process();
             };
 
+            StreamReader.OnRawMessageReady += delegate (PXMessageReader reader, string rawMessage) {
+                this.container.Logger().Debug(delegate { return $"Message received: {rawMessage}"; });
+            };
+
             StreamReader.OnStreamClose += delegate {
                 Close();
             };
@@ -72,7 +76,6 @@ namespace Pixie.Core
                             PXMiddlewareService.Scope.Message
                         );
                     });
-
                 }
             } catch (Exception e) {
                 this.container.Logger().Exception(e);
