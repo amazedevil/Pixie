@@ -19,7 +19,7 @@ public static class PXContainerExtensions
     }
 
     public static IPXEnvironmentService Env(this IResolver resolver) {
-        return resolver.Resolve<PXEnvironmentService>();
+        return resolver.Resolve<IPXEnvironmentService>();
     }
 
     public static IPXClientService Client(this IResolver resolver) {
