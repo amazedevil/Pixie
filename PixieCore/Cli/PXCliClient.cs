@@ -18,7 +18,7 @@ namespace Pixie.Core.Cli
         }
 
         public async Task Send(PXCliCommand command) {
-            using (var pipe = new NamedPipeClientStream(env.GetString(PXCliConsts.PX_ENV_CLI_PIPE_NAME_PARAMETER, PXCliConsts.PX_ENV_CLI_PIPE_NAME_DEFAULT))) {
+            using (var pipe = new NamedPipeClientStream(env.GetString(PXEnvironmentService.ENV_PARAM_CLI_PIPE_NAME, PXCliConsts.PX_ENV_CLI_PIPE_NAME_DEFAULT))) {
                 await pipe.ConnectAsync();
 
                 formatter.Serialize(pipe, command);

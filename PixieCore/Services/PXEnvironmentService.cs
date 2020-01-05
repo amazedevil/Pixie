@@ -8,6 +8,8 @@ namespace Pixie.Core.Services
 {
     public class PXEnvironmentService
     {
+        public const string ENV_PARAM_CLI_PIPE_NAME = "PX_ENV_CLI_PIPE_NAME";
+
         private JObject items;
 
         public PXEnvironmentService() {
@@ -28,7 +30,11 @@ namespace Pixie.Core.Services
             return (string)items[key];
         }
 
-        public int GetInt(string key) {
+        public int GetInt(string key, int defaultValue = 0) {
+            if (!items.ContainsKey(key)) {
+                return defaultValue;
+            }
+
             return (int)items[key];
         }
     }

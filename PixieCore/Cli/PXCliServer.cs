@@ -1,4 +1,5 @@
 ﻿using DryIoc;
+using Pixie.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.IO.Pipes;
@@ -21,7 +22,7 @@ namespace Pixie.Core.Cli
 
         internal PXCliServer(Container container) {
             this.container = container;
-            pipeName = container.Env().GetString(PXCliConsts.PX_ENV_CLI_PIPE_NAME_PARAMETER, pipeName);
+            pipeName = container.Env().GetString(PXEnvironmentService.ENV_PARAM_CLI_PIPE_NAME, pipeName);
 
             cancellationTokenSource = new CancellationTokenSource();
             task = RunServer(cancellationTokenSource.Token);
