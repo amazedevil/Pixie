@@ -1,9 +1,7 @@
 ﻿using DryIoc;
 using Pixie.Core.Cli;
-using Pixie.Core.Messages;
 using Pixie.Core.ServiceProviders;
 using Pixie.Core.Services;
-using Pixie.Core.Services.Stubs;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -107,13 +105,7 @@ namespace Pixie.Core
         }
 
         private Container CreateContainer(IPXInitialOptionsService options) {
-            var stubs = new Container();
-
-            stubs.Register<IPXLoggerService, PXLoggerStub>();
-
-            var container = new Container(Rules.Default.WithUnknownServiceResolvers(r => {
-                return new DelegateFactory(delegate { return stubs.Resolve(r.ServiceType); });
-            }));
+            var container = new Container();
 
             container.Use<IPXMessageSenderService>(this);
             container.Use(options);
@@ -121,6 +113,7 @@ namespace Pixie.Core
             container.RegisterDelegate(r => new PXSchedulerService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.Register<PXMiddlewareService>(Reuse.Singleton);
             container.Register<IPXEnvironmentService, PXEnvironmentService>();
+            container.Register<PXLoggerService>();
 
             //Initialize in place some dependencies
             container.Resolve<PXSchedulerService>().Launch();

@@ -6,8 +6,8 @@ using System.Text;
 
 public static class PXContainerExtensions
 {
-    public static IPXLoggerService Logger(this IResolver resolver) {
-        return resolver.Resolve<IPXLoggerService>();
+    public static PXLoggerService Logger(this IResolver resolver) {
+        return resolver.Resolve<PXLoggerService>();
     }
 
     public static IPXInitialOptionsService InitialOptions(this IResolver resolver) {
