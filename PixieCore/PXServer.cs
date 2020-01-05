@@ -120,7 +120,7 @@ namespace Pixie.Core
 
             container.RegisterDelegate(r => new PXSchedulerService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.Register<PXMiddlewareService>(Reuse.Singleton);
-            container.Register<PXEnvironmentService>(Reuse.Singleton);
+            container.Register<IPXEnvironmentService, PXEnvironmentService>();
 
             //Initialize in place some dependencies
             container.Resolve<PXSchedulerService>().Launch();

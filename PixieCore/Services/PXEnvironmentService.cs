@@ -6,13 +6,13 @@ using System.Text;
 
 namespace Pixie.Core.Services
 {
-    public class PXEnvironmentService
+    internal class PXEnvironmentService : IPXEnvironmentService
     {
         public const string ENV_PARAM_CLI_PIPE_NAME = "PX_ENV_CLI_PIPE_NAME";
 
         private JObject items;
 
-        public PXEnvironmentService() {
+        internal PXEnvironmentService() {
             string envFilePath = AppDomain.CurrentDomain.BaseDirectory + ".env";
 
             if (File.Exists(envFilePath)) {
@@ -22,7 +22,7 @@ namespace Pixie.Core.Services
             }
         }
 
-        public string GetString(string key, string defaultValue = null) {
+        public string GetString(string key, string defaultValue) {
             if (!items.ContainsKey(key)) {
                 return defaultValue;
             }
@@ -30,7 +30,7 @@ namespace Pixie.Core.Services
             return (string)items[key];
         }
 
-        public int GetInt(string key, int defaultValue = 0) {
+        public int GetInt(string key, int defaultValue) {
             if (!items.ContainsKey(key)) {
                 return defaultValue;
             }
