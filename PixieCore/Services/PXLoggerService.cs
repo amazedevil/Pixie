@@ -25,26 +25,42 @@ namespace Pixie.Core.Services
         }
 
         public void Exception(Exception e) {
+            Exception(delegate { return e; });
+        }
+
+        public void Exception(Func<Exception> ep) {
             if (Level.HasFlag(LogLevel.Error)) {
-                this.writer?.Exception(e);
+                this.writer?.Exception(ep());
             }
         }
 
         public void Error(string s) {
+            Error(delegate { return s; });
+        }
+
+        public void Error(Func<string> sp) {
             if (Level.HasFlag(LogLevel.Error)) {
-                this.writer?.Error(s);
+                this.writer?.Error(sp());
             }
         }
 
         public void Info(string s) {
+            Info(delegate { return s; });
+        }
+
+        public void Info(Func<string> sp) {
             if (Level.HasFlag(LogLevel.Info)) {
-                this.writer?.Info(s);
+                this.writer?.Info(sp());
             }
         }
 
         public void Debug(string s) {
+            Debug(delegate { return s; });
+        }
+
+        public void Debug(Func<string> sp) {
             if (Level.HasFlag(LogLevel.Debug)) {
-                this.writer?.Debug(s);
+                this.writer?.Debug(sp());
             }
         }
     }
