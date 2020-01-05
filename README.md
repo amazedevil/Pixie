@@ -123,6 +123,10 @@ That's it! We've made a simple chat with Pixie framework. If you're going to div
 - scheduling jobs, to handle some heavy tasks in background, or just tasks, fireing not at the time of some message handling (e.g. cron scheduled) (guide in development)
 - working with database over entity framework core, how link it with Pixie based server using middlewares and how to deal with middlewares in general (guide in development)
 
+## Contacts
+
+If you have any question, suggestion, or just anything to say about project, please open an [issue](https://github.com/amazedevil/Pixie/issues), also if you wish to have some more friendly way of communicating (e.g. spectrum chat community), please also open an issue with suitable description. I'll appreciate any kind of feedback :)
+
 ## Dependencies
 
 - [DryIoc](https://github.com/dadhi/DryIoc) - used as dependency injection mechanism, framework is based on.
