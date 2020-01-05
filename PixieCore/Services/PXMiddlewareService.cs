@@ -1,24 +1,21 @@
 ﻿using DryIoc;
-using Pixie.Core.Messages;
 using Pixie.Core.Middlewares;
-using Pixie.Core.Tasks;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Pixie.Core.Services
 {
     public class PXMiddlewareService
     {
-
         [Flags]
         public enum Scope
         {
             Message = 1,
             Scheduled = 2,
             Cli = 4,
-            Universal = Message | Scheduled | Cli
+            Universal = Message | Scheduled | Cli,
         }
 
         private struct MiddlewareWrapper
@@ -27,17 +24,17 @@ namespace Pixie.Core.Services
             public Scope scope;
         }
 
-        private List<MiddlewareWrapper> middlewares = new List<MiddlewareWrapper>();
+        private ConcurrentQueue<MiddlewareWrapper> middlewares = new ConcurrentQueue<MiddlewareWrapper>();
 
         public void AddMiddleware(IPXMiddleware middleware, Scope scope) {
-            middlewares.Add(new MiddlewareWrapper() {
+            middlewares.Enqueue(new MiddlewareWrapper() {
                 middleware = middleware,
                 scope = scope
             });
         }
 
         public void RemoveMiddleware(IPXMiddleware middleware) {
-            middlewares.RemoveAll(m => Object.ReferenceEquals(m, middleware));
+            middlewares = new ConcurrentQueue<MiddlewareWrapper>(middlewares.Where(m => !Object.ReferenceEquals(m, middleware)));
         }
 
         internal void HandleOverMiddlewares(Action<IResolverContext> handler, IResolverContext context, Scope scope) {
