@@ -48,7 +48,7 @@ namespace Pixie.Core
             };
 
             StreamReader.OnRawMessageReady += delegate (PXMessageReader reader, string rawMessage) {
-                this.container.Logger().Debug(delegate { return $"Message received: {rawMessage}"; });
+                LogRawMessage(rawMessage);
             };
 
             StreamReader.OnStreamClose += delegate {
@@ -120,6 +120,10 @@ namespace Pixie.Core
 
                 action(messageContext);
             }
+        }
+
+        private void LogRawMessage(string rawMessage) {
+            this.container.Logger().Debug(delegate { return $"Message received: {rawMessage}"; });
         }
 
         //IPXClientService
