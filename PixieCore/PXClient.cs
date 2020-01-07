@@ -1,24 +1,22 @@
 ﻿using DryIoc;
-using Newtonsoft.Json.Linq;
 using Pixie.Core.Messages;
-using Pixie.Core.Middlewares;
 using Pixie.Core.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Text;
 
 namespace Pixie.Core
 {
-    class PXClient : IPXClientService
+    internal class PXClient : IPXClientService
     {
         public string Id { get; private set; }
         public PXMessageReader StreamReader { get; private set; }
         public PXMessageWriter StreamWriter { get; private set; }
 
-        private NetworkStream netStream;
+        private Stream stream;
         private TcpClient client;
         private Container container;
         private Dictionary<Type, Type> messageHandlerMap = new Dictionary<Type, Type>();
@@ -31,7 +29,7 @@ namespace Pixie.Core
         public PXClient(TcpClient tcpClient, Container container, Type[] messageHandlerTypes) {
             Id = Guid.NewGuid().ToString();
             client = tcpClient;
-            netStream = client.GetStream();
+            stream = container.Resolve<PXStreamWrapperService>().WrapStream(client.GetStream());
 
             foreach (var t in messageHandlerTypes) {
                 messageHandlerMap[t.GetProperty(
@@ -40,8 +38,8 @@ namespace Pixie.Core
                 ).GetValue(null) as Type] = t;
             }
 
-            StreamReader = new PXMessageReader(netStream, messageHandlerMap.Keys.ToArray());
-            StreamWriter = new PXMessageWriter(netStream);
+            StreamReader = new PXMessageReader(stream, messageHandlerMap.Keys.ToArray());
+            StreamWriter = new PXMessageWriter(stream);
 
             this.container = container;
 
@@ -101,7 +99,7 @@ namespace Pixie.Core
         }
 
         protected internal void Close() {
-            netStream.Close();
+            stream.Close();
             client.Close();
 
             IsClosed = true;

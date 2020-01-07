@@ -2,6 +2,7 @@
 using Pixie.Core.Cli;
 using Pixie.Core.ServiceProviders;
 using Pixie.Core.Services;
+using Pixie.Core.StreamWrappers;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -28,6 +29,10 @@ namespace Pixie.Core
 
         protected virtual Type GetDisconnectMessageHandlerType() {
             return null;
+        }
+
+        protected virtual IPXStreamWrapper[] GetStreamWrappers() {
+            return new IPXStreamWrapper[] { };
         }
 
         protected virtual bool IsCliServerActive
@@ -112,11 +117,13 @@ namespace Pixie.Core
 
             container.RegisterDelegate(r => new PXSchedulerService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.Register<PXMiddlewareService>(Reuse.Singleton);
+            container.Register<PXStreamWrapperService>(Reuse.Singleton);
             container.Register<IPXEnvironmentService, PXEnvironmentService>();
             container.Register<PXLoggerService>();
 
             //Initialize in place some dependencies
             container.Resolve<PXSchedulerService>().Launch();
+            container.Resolve<PXStreamWrapperService>().SetupWrappers(this.GetStreamWrappers());
 
             return container;
         }
