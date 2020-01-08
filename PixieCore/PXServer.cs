@@ -112,6 +112,7 @@ namespace Pixie.Core
         private Container CreateContainer(IPXInitialOptionsService options) {
             var container = new Container();
 
+            container.Use(this);
             container.Use<IPXMessageSenderService>(this);
             container.Use(options);
 
