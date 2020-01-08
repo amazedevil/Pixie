@@ -20,7 +20,7 @@ namespace Pixie.Core.Services
         public LogLevel Level { set; get; }
 
         internal PXLoggerService(IContainer container) {
-            this.writer = container.Resolve<IPXLogWriterService>();
+            this.writer = container.Resolve<IPXLogWriterService>(IfUnresolved.ReturnDefault);
             this.Level = (LogLevel)container.Env().GetInt(PXEnvironmentService.ENV_PARAM_LOG_LEVEL, (int)LogLevel.Default);
         }
 
