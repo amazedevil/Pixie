@@ -120,6 +120,7 @@ namespace Pixie.Core
             container.Register<PXStreamWrapperService>(Reuse.Singleton);
             container.Register<IPXEnvironmentService, PXEnvironmentService>();
             container.Register<PXLoggerService>();
+            container.RegisterDelegate<IPXEnvironmentService>(r => new PXEnvironmentService());
 
             //Initialize in place some dependencies
             container.Resolve<PXSchedulerService>().Launch();
