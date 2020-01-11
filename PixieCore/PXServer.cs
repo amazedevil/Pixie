@@ -102,7 +102,7 @@ namespace Pixie.Core
         protected internal void Disconnect() {
             this.container.Logger().Info("Stopping server");
 
-            tcpListener.Stop();
+            tcpListener?.Stop();
 
             foreach (var client in clients) {
                 client.Value.Close();
