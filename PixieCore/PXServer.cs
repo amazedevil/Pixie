@@ -45,7 +45,7 @@ namespace Pixie.Core
             this.container = CreateContainer(options);
         }
 
-        public void Start() {
+        public async void Start() {
             try {
                 foreach (var module in GetServiceProviders()) {
                     module.OnBoot(this.container);
@@ -64,7 +64,7 @@ namespace Pixie.Core
 
                 while (true) {
                     PXClient client = new PXClient(
-                        tcpListener.AcceptTcpClientAsync().GetAwaiter().GetResult(),
+                        await tcpListener.AcceptTcpClientAsync(),
                         this.container,
                         this.GetMessageHandlerTypes()
                     );
