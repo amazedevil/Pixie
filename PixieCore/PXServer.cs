@@ -86,6 +86,10 @@ namespace Pixie.Core
             }
         }
 
+        public void Stop() {
+            tcpListener?.Stop();
+        }
+
         private void DisconnectClient(PXClient client) {
             client.ProcessClosingMessage(GetDisconnectMessageHandlerType());
             clients.Remove(client.Id);
