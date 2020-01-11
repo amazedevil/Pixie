@@ -1,20 +1,13 @@
 ﻿using DryIoc;
-using Pixie.Core.Middlewares;
-using Pixie.Core.Tasks;
 using Quartz;
 using Quartz.Impl;
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pixie.Core.Services
 {
     public class PXSchedulerService
     {
-
         internal const string SCHEDULER_SERVICE = "scheduler_service";
 
         private IContainer container;
@@ -39,7 +32,8 @@ namespace Pixie.Core.Services
 
         private IScheduler GetScheduler() {
             NameValueCollection props = new NameValueCollection {
-                { "quartz.scheduler.instanceName", "PixieScheduler" },
+                //generated name prevents issues when multiple Pixie instances running, e.g. in tests
+                { "quartz.scheduler.instanceName", "PixieScheduler-" + Guid.NewGuid().ToString() }, 
                 { "quartz.threadPool.threadCount", "10" },
                 { "quartz.jobStore.misfireThreshold", "60000" }
             };
