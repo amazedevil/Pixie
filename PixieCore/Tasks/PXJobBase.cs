@@ -34,10 +34,9 @@ namespace Pixie.Core.Tasks
                         PXMiddlewareService.Scope.Scheduled
                     );
                 } catch (Exception e) {
-                    jobContext.Logger().Exception(e);
+                    jobContext.Errors().Handle(e, PXErrorHandlingService.Scope.Job);
                 }
             });
-
 
             return Task.CompletedTask;
         }

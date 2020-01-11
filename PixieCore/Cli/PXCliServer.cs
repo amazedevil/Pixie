@@ -59,7 +59,7 @@ namespace Pixie.Core.Cli
                 } catch (OperationCanceledException) {
                     break;
                 } catch (Exception e) {
-                    container.Logger().Exception(e);
+                    this.container.Errors().Handle(e, Services.PXErrorHandlingService.Scope.CliCommand);
                 }
             }
         }

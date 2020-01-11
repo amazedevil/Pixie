@@ -57,7 +57,7 @@ namespace Pixie.Core
             };
 
             StreamReader.OnStreamError += delegate (PXMessageReader r, Exception e) {
-                container.Logger().Exception(e);
+                OnClientError(e);
             };
         }
 
@@ -77,10 +77,14 @@ namespace Pixie.Core
                     });
                 }
             } catch (Exception e) {
-                this.container.Logger().Exception(e);
-
                 Close();
+
+                this.container.Errors().Handle(e, PXErrorHandlingService.Scope.ClientMessage);
             }
+        }
+
+        private void OnClientError(Exception e) {
+            this.container.Errors().Handle(e, PXErrorHandlingService.Scope.Client);
         }
 
         public bool IsSubscribed(int subscriptionId) {

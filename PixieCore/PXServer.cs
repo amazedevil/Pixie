@@ -80,8 +80,9 @@ namespace Pixie.Core
                     this.container.Logger().Info("Connected client id: " + client.Id);
                 }
             } catch (Exception ex) {
-                this.container.Logger().Exception(ex);
                 Disconnect();
+
+                this.container.Errors().Handle(ex, PXErrorHandlingService.Scope.Server);
             }
         }
 
@@ -120,6 +121,7 @@ namespace Pixie.Core
             container.RegisterDelegate(r => new PXSchedulerService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.Register<PXMiddlewareService>(Reuse.Singleton);
             container.Register<PXStreamWrapperService>(Reuse.Singleton);
+            container.Register<PXErrorHandlingService>();
             container.RegisterDelegate<IPXEnvironmentService>(r => new PXEnvironmentService());
             container.RegisterDelegate(r => new PXLoggerService(r.Resolve<IContainer>()));
 
