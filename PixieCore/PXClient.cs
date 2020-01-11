@@ -1,6 +1,7 @@
 ﻿using DryIoc;
 using Pixie.Core.Messages;
 using Pixie.Core.Services;
+using Pixie.Core.Services.Internal;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -1,10 +1,8 @@
 ﻿using DryIoc;
-using Pixie.Core.Services;
+using Pixie.Core.Services.Internal;
 using System;
-using System.Collections.Generic;
 using System.IO.Pipes;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
