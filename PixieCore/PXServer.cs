@@ -1,6 +1,7 @@
 ﻿using DryIoc;
 using Pixie.Core.Cli;
 using Pixie.Core.ServiceProviders;
+using Pixie.Core.Services.Internal;
 using Pixie.Core.Services;
 using Pixie.Core.StreamWrappers;
 using System;

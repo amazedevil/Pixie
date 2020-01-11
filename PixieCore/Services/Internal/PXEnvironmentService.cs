@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Pixie.Core.Services
+namespace Pixie.Core.Services.Internal
 {
     internal class PXEnvironmentService : IPXEnvironmentService
     {

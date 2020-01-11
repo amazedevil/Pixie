@@ -1,4 +1,5 @@
 ﻿using DryIoc;
+using Pixie.Core.Services.Internal;
 using System;
 
 namespace Pixie.Core.Services
