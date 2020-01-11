@@ -46,19 +46,19 @@ namespace Pixie.Core
         }
 
         public void Start() {
-            foreach (var module in GetServiceProviders()) {
-                module.OnBoot(this.container);
-            }
-
-            foreach (var module in GetServiceProviders()) {
-                module.OnPostBoot(this.container);
-            }
-
-            StartCliServer();
-
-            this.container.Logger().Info("Starting socket server");
-
             try {
+                foreach (var module in GetServiceProviders()) {
+                    module.OnBoot(this.container);
+                }
+
+                foreach (var module in GetServiceProviders()) {
+                    module.OnPostBoot(this.container);
+                }
+
+                StartCliServer();
+
+                this.container.Logger().Info("Starting socket server");
+
                 tcpListener = new TcpListener(IPAddress.Any, this.container.InitialOptions().Port);
                 tcpListener.Start();
 
