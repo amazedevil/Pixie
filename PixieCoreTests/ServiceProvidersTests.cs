@@ -34,24 +34,34 @@ namespace PixieCoreTests
 
         [Test]
         public void ServiceProviderMethodsCallTest() {
-            var serviceProviderMock = new Mock<IPXServiceProvider>(MockBehavior.Strict);
+            var serviceProviderMockFirst = new Mock<IPXServiceProvider>(MockBehavior.Strict);
+            var serviceProviderMockSecond = new Mock<IPXServiceProvider>(MockBehavior.Strict);
 
             var sequence = new MockSequence();
 
-            serviceProviderMock.InSequence(sequence).Setup(sp => sp.OnBoot(It.IsAny<IContainer>()));
-            serviceProviderMock.InSequence(sequence).Setup(sp => sp.OnPostBoot(It.IsAny<IContainer>()));
+            serviceProviderMockFirst.InSequence(sequence).Setup(sp => sp.OnBoot(It.IsAny<IContainer>()));
+            serviceProviderMockSecond.InSequence(sequence).Setup(sp => sp.OnBoot(It.IsAny<IContainer>()));
+
+            serviceProviderMockFirst.InSequence(sequence).Setup(sp => sp.OnPostBoot(It.IsAny<IContainer>()));
+            serviceProviderMockSecond.InSequence(sequence).Setup(sp => sp.OnPostBoot(It.IsAny<IContainer>()));
 
             TestServer server = new TestServer(
                 new TestInitialOptions(), 
-                new IPXServiceProvider[] { serviceProviderMock.Object }
+                new IPXServiceProvider[] { 
+                    serviceProviderMockFirst.Object,
+                    serviceProviderMockSecond.Object
+                }
             );
 
             server.Start();
 
             Thread.Sleep(1000);
 
-            serviceProviderMock.Verify(sp => sp.OnBoot(It.IsAny<IContainer>()), Times.Once);
-            serviceProviderMock.Verify(sp => sp.OnPostBoot(It.IsAny<IContainer>()), Times.Once);
+            serviceProviderMockFirst.Verify(sp => sp.OnBoot(It.IsAny<IContainer>()), Times.Once);
+            serviceProviderMockFirst.Verify(sp => sp.OnPostBoot(It.IsAny<IContainer>()), Times.Once);
+
+            serviceProviderMockSecond.Verify(sp => sp.OnBoot(It.IsAny<IContainer>()), Times.Once);
+            serviceProviderMockSecond.Verify(sp => sp.OnPostBoot(It.IsAny<IContainer>()), Times.Once);
         }
     }
 }
