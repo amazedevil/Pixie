@@ -5,9 +5,9 @@ using System;
 using System.IO;
 using System.Threading;
 
-namespace PixieCoreTests
+namespace PixieTests
 {
-    public class Tests
+    public class ReaderWriterTests
     {
         struct InnerTestMessageStruct
         {
@@ -74,7 +74,7 @@ namespace PixieCoreTests
 
             reader.OnStreamError += delegate (PXMessageReader r, Exception e) {
                 Assert.IsInstanceOf<PXUnregisteredMessageReceived>(e);
-                Assert.AreEqual($"Unregistered message with hash 41416596 received", e.Message);
+                Assert.AreEqual($"Unregistered message with hash 403381675 received", e.Message);
 
                 dataReceivedEvent.Set();
             };

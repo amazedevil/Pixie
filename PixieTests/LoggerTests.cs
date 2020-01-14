@@ -5,7 +5,7 @@ using Pixie.Core.Services;
 using System;
 using System.Collections.Generic;
 
-namespace PixieCoreTests
+namespace PixieTests
 {
     class LoggerTests
     {

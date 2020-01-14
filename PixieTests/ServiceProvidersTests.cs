@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace PixieCoreTests
+namespace PixieTests
 {
     public class ServiceProvidersTests {
         private class TestServer : PXServer {

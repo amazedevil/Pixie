@@ -11,11 +11,13 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace PixieCoreTests
+namespace PixieTests
 {
-    class ServerTests {
+    class ServerTests
+    {
 
-        private struct TestMessage {
+        private struct TestMessage
+        {
             public string testString;
         }
 
@@ -38,12 +40,10 @@ namespace PixieCoreTests
 
             protected override IPXServiceProvider[] GetServiceProviders() {
                 return base.GetServiceProviders();
-
-
             }
 
             protected override Type[] GetMessageHandlerTypes() {
-                return new Type[] { 
+                return new Type[] {
                     typeof(MessageHandler)
                 };
             }
@@ -64,16 +64,18 @@ namespace PixieCoreTests
             ManualResetEvent dataReceivedEvent = new ManualResetEvent(false);
 
             var initials = new TestInitialOptions();
+
             TestServer server = new TestServer(initials, delegate (object receivedMessage) {
                 Assert.AreEqual(receivedMessage, message);
                 dataReceivedEvent.Set();
             });
+
             TestClient client = new TestClient(
-                initials.Host, 
-                initials.Port, 
+                initials.Host,
+                initials.Port,
                 new Type[] {
                     typeof(MessageHandler)
-                }, delegate(object receivedMessage) { }
+                }, delegate (object receivedMessage) { }
             );
 
             new Thread(new ThreadStart(

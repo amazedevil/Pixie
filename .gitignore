@@ -1,7 +1,7 @@
 .vs/
-PixieCore/obj/
-PixieCore/PixieCore.csproj.user
-PixieCore/bin/
-PixieCore/Output/
-PixieCoreTests/bin/
-PixieCoreTests/obj/
+Pixie/obj/
+Pixie/Pixie.csproj.user
+Pixie/bin/
+Pixie/Output/
+PixieTests/bin/
+PixieTests/obj/

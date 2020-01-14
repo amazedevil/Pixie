@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace PixieCoreTests
+namespace PixieTests
 {
     class MiddlewaresTests
     {
