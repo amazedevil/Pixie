@@ -8,8 +8,8 @@ namespace Pixie.Core.Services.Internal
 {
     internal class PXEnvironmentService : IPXEnvironmentService
     {
-        public const string ENV_PARAM_CLI_PIPE_NAME = "PX_ENV_CLI_PIPE_NAME";
-        public const string ENV_PARAM_LOG_LEVEL = "PX_ENV_LOG_LEVEL";
+        public const string ENV_PARAM_CLI_PIPE_NAME = "PX_CLI_PIPE_NAME";
+        public const string ENV_PARAM_LOG_LEVEL = "PX_LOG_LEVEL";
 
         private JObject items;
 
