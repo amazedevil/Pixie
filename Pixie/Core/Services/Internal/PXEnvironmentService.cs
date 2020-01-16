@@ -10,6 +10,8 @@ namespace Pixie.Core.Services.Internal
     {
         public const string ENV_PARAM_CLI_PIPE_NAME = "PX_CLI_PIPE_NAME";
         public const string ENV_PARAM_LOG_LEVEL = "PX_LOG_LEVEL";
+        public const string ENV_PARAM_HOST = "PX_HOST";
+        public const string ENV_PARAM_PORT = "PX_PORT";
 
         private JObject items;
 

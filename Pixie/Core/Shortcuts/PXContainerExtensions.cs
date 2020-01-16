@@ -10,10 +10,6 @@ public static class PXContainerExtensions
         return resolver.Resolve<PXLoggerService>();
     }
 
-    public static IPXInitialOptionsService InitialOptions(this IResolver resolver) {
-        return resolver.Resolve<IPXInitialOptionsService>();
-    }
-
     public static PXMiddlewareService Middlewares(this IResolver resolver) {
         return resolver.Resolve<PXMiddlewareService>();
     }

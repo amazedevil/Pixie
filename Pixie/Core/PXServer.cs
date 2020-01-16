@@ -41,8 +41,8 @@ namespace Pixie.Core
             get { return false; }
         }
 
-        public PXServer(IPXInitialOptionsService options) {
-            this.container = CreateContainer(options);
+        public PXServer() {
+            this.container = CreateContainer();
         }
 
         public async void Start() {
@@ -59,7 +59,7 @@ namespace Pixie.Core
 
                 this.container.Logger().Info("Starting socket server");
 
-                tcpListener = new TcpListener(IPAddress.Any, this.container.InitialOptions().Port);
+                tcpListener = new TcpListener(IPAddress.Any, this.container.Env().Port());
                 tcpListener.Start();
 
                 while (true) {
@@ -115,12 +115,11 @@ namespace Pixie.Core
             cliServer?.Stop();
         }
 
-        private Container CreateContainer(IPXInitialOptionsService options) {
+        private Container CreateContainer() {
             var container = new Container();
 
             container.Use(this);
             container.Use<IPXMessageSenderService>(this);
-            container.Use(options);
 
             container.RegisterDelegate(r => new PXSchedulerService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.Register<PXMiddlewareService>(Reuse.Singleton);
