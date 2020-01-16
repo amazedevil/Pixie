@@ -6,7 +6,7 @@ namespace Pixie.Core.Services
 {
     public interface IPXEnvironmentService
     {
-        public string GetString(string key, string defaultValue = null);
-        public int GetInt(string key, int defaultValue = 0);
+        public string GetString(string key, Func<string> defaultValueProvider);
+        public int GetInt(string key, Func<int> defaultValueProvider);
     }
 }

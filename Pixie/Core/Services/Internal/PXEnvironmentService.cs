@@ -23,17 +23,17 @@ namespace Pixie.Core.Services.Internal
             }
         }
 
-        public string GetString(string key, string defaultValue) {
+        public string GetString(string key, Func<string> defaultValueProvider) {
             if (!items.ContainsKey(key)) {
-                return defaultValue;
+                return defaultValueProvider();
             }
 
             return (string)items[key];
         }
 
-        public int GetInt(string key, int defaultValue) {
+        public int GetInt(string key, Func<int> defaultValueProvider) {
             if (!items.ContainsKey(key)) {
-                return defaultValue;
+                return defaultValueProvider();
             }
 
             return (int)items[key];
