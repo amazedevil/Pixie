@@ -5,7 +5,9 @@ using Pixie.Core;
 using Pixie.Core.Messages;
 using Pixie.Core.ServiceProviders;
 using Pixie.Core.Services;
+using Pixie.Core.Services.Internal;
 using PixieCoreTests.Client;
+using PixieTests.Common;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -34,12 +36,14 @@ namespace PixieTests
         {
             public Action<object> action;
 
-            public TestServer(IPXInitialOptionsService options, Action<object> action) : base(options) {
+            public TestServer(Action<object> action) : base() {
                 this.action = action;
             }
 
             protected override IPXServiceProvider[] GetServiceProviders() {
-                return base.GetServiceProviders();
+                return new IPXServiceProvider[] {
+                    new EnvironmentDefaultsServiceProvider()
+                };
             }
 
             protected override Type[] GetMessageHandlerTypes() {
@@ -49,30 +53,19 @@ namespace PixieTests
             }
         }
 
-        private class TestInitialOptions : IPXInitialOptionsService
-        {
-            public int Port => 7777;
-
-            public bool Debug => false;
-
-            public string Host => "localhost";
-        }
-
         [Test]
         public void ClientToServerMessagePassingTest() {
             var message = new TestMessage() { testString = "test" };
             ManualResetEvent dataReceivedEvent = new ManualResetEvent(false);
 
-            var initials = new TestInitialOptions();
-
-            TestServer server = new TestServer(initials, delegate (object receivedMessage) {
+            TestServer server = new TestServer(delegate (object receivedMessage) {
                 Assert.AreEqual(receivedMessage, message);
                 dataReceivedEvent.Set();
             });
 
             TestClient client = new TestClient(
-                initials.Host,
-                initials.Port,
+                EnvironmentDefaultsServiceProvider.HOST,
+                EnvironmentDefaultsServiceProvider.PORT,
                 new Type[] {
                     typeof(MessageHandler)
                 }, delegate (object receivedMessage) { }

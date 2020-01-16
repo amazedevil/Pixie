@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Pixie.Core;
 using Pixie.Core.ServiceProviders;
 using Pixie.Core.Services;
+using PixieTests.Common;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,21 +16,13 @@ namespace PixieTests
         private class TestServer : PXServer {
             private IPXServiceProvider[] providers;
 
-            public TestServer(IPXInitialOptionsService options, IPXServiceProvider[] providers) : base(options) {
+            public TestServer(IPXServiceProvider[] providers) : base() {
                 this.providers = providers;
             }
 
             protected override IPXServiceProvider[] GetServiceProviders() {
                 return providers;
             }
-        }
-
-        private class TestInitialOptions : IPXInitialOptionsService {
-            public int Port => 7777;
-
-            public bool Debug => false;
-
-            public string Host => "localhost";
         }
 
         [Test]
@@ -45,9 +38,14 @@ namespace PixieTests
             serviceProviderMockFirst.InSequence(sequence).Setup(sp => sp.OnPostBoot(It.IsAny<IContainer>()));
             serviceProviderMockSecond.InSequence(sequence).Setup(sp => sp.OnPostBoot(It.IsAny<IContainer>()));
 
+            var environmentMock = new Mock<IPXEnvironmentService>();
+
+            environmentMock.Setup(e => e.GetString(It.Is<string>(s => s == "PX_HOST"), null)).Returns("localhost");
+            environmentMock.Setup(e => e.GetInt(It.Is<string>(s => s == "PX_PORT"), null)).Returns(7777);
+
             TestServer server = new TestServer(
-                new TestInitialOptions(), 
-                new IPXServiceProvider[] { 
+                new IPXServiceProvider[] {
+                    new EnvironmentDefaultsServiceProvider(),
                     serviceProviderMockFirst.Object,
                     serviceProviderMockSecond.Object
                 }
