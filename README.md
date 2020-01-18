@@ -19,14 +19,11 @@ public struct ClientMessageSaySomething {
 }
 ```
 
-After that, let's inherit PXServer by some new class and create initial options:
+After that, let's inherit PXServer by some new class:
 
 ```csharp
 class MyServer : PXServer
 {
-    public RTHSServer(IPXInitialOptionsService options) : base(options) {
-    }
-
     //Here we should pass message handler (we'll look at ones later) types
     protected override Type[] GetMessageHandlerTypes() {
         return new Type[] {
@@ -34,19 +31,12 @@ class MyServer : PXServer
         };
     }
 }
-
-//We'll use this structure to pass on starting server
-class MyInitialOptions : IPXInitialOptionsService {
-    public int Port => 7777; //port server is listening to
-    public bool Debug => false; //is debugging on, that may change server behaviour in some cases
-    public string Host => "localhost"; //interface server is listening to
-}
 ```
 
 When it's ready, we can run it:
 
 ```csharp
-(new RTHSServer(new MyInitialOptions())).Start();
+(new RTHSServer()).Start();
 ```
 
 Let's see what MessageHandlerSaySomething consists of:
@@ -69,6 +59,18 @@ class MessageHandlerSaySomething : PXMessageHandlerBase<ServerMessageSaySomethin
     }
 }
 ```
+
+Before we start server, we should set environment parameters. Pixie read ones from file ".env" placed next to main executable, it's content (JSON) looks like this:
+
+```json
+{
+    "PX_HOST": "localhost",
+    "PX_PORT": 7777
+}
+```
+
+- PX_HOST - hostname or ip of our server
+- PX_PORT - port our server is listening to
 
 So what about Unity side, first of all we should import package [PixieUnity.unitypackage](https://github.com/amazedevil/PixieUnity/releases/) (or install client code somehow else, see [link](https://github.com/amazedevil/PixieUnity#installation) for details).
 
