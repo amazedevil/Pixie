@@ -23,8 +23,8 @@
       <_Parameter1>$(MSBuildProjectName)Tests</_Parameter1>
     </AssemblyAttribute>
 
-    <PackageReference Include="DryIoc" Version="4.0.4" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="DryIoc" Version="4.0.7" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Quartz" Version="3.0.7" />
   </ItemGroup>
 
