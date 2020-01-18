@@ -38,11 +38,6 @@ namespace PixieTests
             serviceProviderMockFirst.InSequence(sequence).Setup(sp => sp.OnPostBoot(It.IsAny<IContainer>()));
             serviceProviderMockSecond.InSequence(sequence).Setup(sp => sp.OnPostBoot(It.IsAny<IContainer>()));
 
-            var environmentMock = new Mock<IPXEnvironmentService>();
-
-            environmentMock.Setup(e => e.GetString(It.Is<string>(s => s == "PX_HOST"), null)).Returns("localhost");
-            environmentMock.Setup(e => e.GetInt(It.Is<string>(s => s == "PX_PORT"), null)).Returns(7777);
-
             TestServer server = new TestServer(
                 new IPXServiceProvider[] {
                     new EnvironmentDefaultsServiceProvider(),
