@@ -6,10 +6,14 @@ using Pixie.Core.Messages;
 using Pixie.Core.ServiceProviders;
 using Pixie.Core.Services;
 using Pixie.Core.Services.Internal;
+using Pixie.Core.StreamWrappers;
+using Pixie.Toolbox.StreamWrappers;
 using PixieCoreTests.Client;
 using PixieTests.Common;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -17,76 +21,52 @@ namespace PixieTests
 {
     class ServerTests
     {
+        //Simple server test
 
-        private struct TestMessage
-        {
-            public string testString;
-        }
-
-        private class MessageHandler : PXMessageHandlerBase<TestMessage>
-        {
-            public override void Handle(TestMessage data) {
-                base.Handle(data);
-
-                (this.context.Resolve<PXServer>() as TestServer).action(data);
-            }
-        }
-
-        private class TestServer : PXServer
-        {
-            public Action<object> action;
-
-            public TestServer(Action<object> action) : base() {
-                this.action = action;
-            }
-
-            protected override IPXServiceProvider[] GetServiceProviders() {
-                return new IPXServiceProvider[] {
-                    new EnvironmentDefaultsServiceProvider()
-                };
-            }
-
-            protected override Type[] GetMessageHandlerTypes() {
-                return new Type[] {
-                    typeof(MessageHandler)
-                };
-            }
+        private class SimpleTestServer : ServerTester.TestServer {
+            internal SimpleTestServer(string host, int port) : base(host, port) {}
         }
 
         [Test]
         public void ClientToServerMessagePassingTest() {
-            var message = new TestMessage() { testString = "test" };
-            ManualResetEvent dataReceivedEvent = new ManualResetEvent(false);
+            ServerTester.PlayCommonServerTest(new SimpleTestServer("localhost", PortProvider.ProviderPort()));
+        }
 
-            TestServer server = new TestServer(delegate (object receivedMessage) {
-                Assert.AreEqual(receivedMessage, message);
-                dataReceivedEvent.Set();
-            });
+        //SSL test
 
-            TestClient client = new TestClient(
-                EnvironmentDefaultsServiceProvider.HOST,
-                EnvironmentDefaultsServiceProvider.PORT,
-                new Type[] {
-                    typeof(MessageHandler)
-                }, delegate (object receivedMessage) { }
-            );
+        private class EnvPlusSsl : EnvironmentDefaultsServiceProvider
+        {
+            internal EnvPlusSsl(string host, int port) : base(host, port) { }
 
-            new Thread(new ThreadStart(
-                delegate () {
-                    server.Start();
-                }
-            )).Start();
+            public override void HandleMock(Mock<IPXEnvironmentService> mock) {
+                base.HandleMock(mock);
 
-            Thread.Sleep(1000); //take time to start server
-            client.Run();
+                var path = Path.GetFullPath("Resources/certificate.p12");
 
-            client.SendMessage(message);
+                mock.Setup(e => e.GetString(It.Is<string>(s => s == PXSSLStreamWrapper.ENV_PARAM_CERTIFICATE_PATH), It.IsAny<Func<string>>())).Returns(path);
+            }
+        }
 
-            if (!dataReceivedEvent.WaitOne(5000)) {
-                Assert.Fail("Message timeout");
+        private class SslTestServer : ServerTester.TestServer
+        {
+            internal SslTestServer(string host, int port) : base(host, port) { }
+
+            protected override IPXStreamWrapper[] GetStreamWrappers(IResolverContext context) {
+                return new IPXStreamWrapper[] {
+                    new PXSSLStreamWrapper(context)
+                };
             }
 
-            dataReceivedEvent.Reset();
+            protected override EnvironmentDefaultsServiceProvider CreateEnvServiceProvider() {
+                return new EnvPlusSsl(this.Host, this.Port);
+            }
+        }
+
+        [Test]
+        public void SslServerMessagePassingTest() {
+            ServerTester.PlayCommonServerTest(new SslTestServer("localhost", PortProvider.ProviderPort()), delegate(TestClient.Builder builder) {
+                builder.SslEnabled(true);
+            });
         }
     }
 }
