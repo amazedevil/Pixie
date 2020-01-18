@@ -16,26 +16,11 @@ namespace Pixie.Toolbox.StreamWrappers
         public const string ENV_PARAM_CERTIFICATE_PATH = "PX_SSL_CERT_PATH";
 
         private string certificatePath = null;
-        private PXLoggerService logger;
 
         public PXSSLStreamWrapper(IResolverContext context) {
-            this.logger = context.Logger();
-
             this.certificatePath = context.Env().GetString(ENV_PARAM_CERTIFICATE_PATH, delegate {
                 throw new PXRequiredEnvironmentParameterNotFound(ENV_PARAM_CERTIFICATE_PATH);
             });
-        }
-
-        private static bool ValidateServerCertificate( 
-            object sender, 
-            X509Certificate certificate,
-            X509Chain chain,
-            SslPolicyErrors sslPolicyErrors
-        ) {
-            if (sslPolicyErrors == SslPolicyErrors.None)
-                return true;
-
-            return false;
         }
 
         public Stream Wrap(Stream stream) {
