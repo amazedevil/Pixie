@@ -41,9 +41,7 @@ namespace PixieTests
             public override void HandleMock(Mock<IPXEnvironmentService> mock) {
                 base.HandleMock(mock);
 
-                var path = Path.GetFullPath("Resources/certificate.p12");
-
-                mock.Setup(e => e.GetString(It.Is<string>(s => s == PXSSLStreamWrapper.ENV_PARAM_CERTIFICATE_PATH), It.IsAny<Func<string>>())).Returns(path);
+                mock.Setup(e => e.GetString(It.Is<string>(s => s == PXSSLStreamWrapper.ENV_PARAM_CERTIFICATE_PATH), It.IsAny<Func<string>>())).Returns("Resources/certificate.p12");
             }
         }
 
