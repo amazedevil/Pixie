@@ -51,9 +51,13 @@ namespace Pixie.Core
                     module.OnBoot(this.container);
                 }
 
+                SetupWrappers();
+
                 foreach (var module in GetServiceProviders()) {
                     module.OnPostBoot(this.container);
                 }
+
+                StartScheduler();
 
                 StartCliServer();
 
@@ -128,11 +132,15 @@ namespace Pixie.Core
             container.RegisterDelegate<IPXEnvironmentService>(r => new PXEnvironmentService());
             container.RegisterDelegate(r => new PXLoggerService(r.Resolve<IContainer>()));
 
-            //Initialize in place some dependencies
-            container.Resolve<PXSchedulerService>().Launch();
-            container.Resolve<PXStreamWrapperService>().SetupWrappers(this.GetStreamWrappers(container));
-
             return container;
+        }
+
+        private void StartScheduler() {
+            container.Resolve<PXSchedulerService>().Launch();
+        }
+
+        private void SetupWrappers() {
+            container.Resolve<PXStreamWrapperService>().SetupWrappers(this.GetStreamWrappers(container));
         }
 
         //IPXMessageSenderService
