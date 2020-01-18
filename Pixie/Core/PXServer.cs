@@ -32,7 +32,7 @@ namespace Pixie.Core
             return null;
         }
 
-        protected virtual IPXStreamWrapper[] GetStreamWrappers() {
+        protected virtual IPXStreamWrapper[] GetStreamWrappers(IResolverContext context) {
             return new IPXStreamWrapper[] { };
         }
 
@@ -130,7 +130,7 @@ namespace Pixie.Core
 
             //Initialize in place some dependencies
             container.Resolve<PXSchedulerService>().Launch();
-            container.Resolve<PXStreamWrapperService>().SetupWrappers(this.GetStreamWrappers());
+            container.Resolve<PXStreamWrapperService>().SetupWrappers(this.GetStreamWrappers(container));
 
             return container;
         }
