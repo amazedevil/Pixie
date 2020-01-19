@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace Pixie.Core
 {
@@ -45,7 +46,15 @@ namespace Pixie.Core
             this.container = CreateContainer();
         }
 
-        public async void Start() {
+        public void StartAsync() {
+            _ = Start();
+        }
+
+        public void StartSync() {
+            Start().Wait();
+        }
+
+        public async Task Start() {
             try {
                 foreach (var module in GetServiceProviders()) {
                     module.OnBoot(this.container);
