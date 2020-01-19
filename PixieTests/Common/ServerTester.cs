@@ -71,13 +71,7 @@ namespace PixieTests.Common
 
             TestClient client = clientBuilder.Build();
 
-            new Thread(new ThreadStart(
-                delegate () {
-                    server.Start();
-                }
-            )).Start();
-
-            Thread.Sleep(1000); //take time to start server
+            server.StartAsync();
             client.Run();
 
             client.SendMessage(message);
