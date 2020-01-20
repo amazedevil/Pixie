@@ -46,9 +46,7 @@ namespace PixieTests
                 }
             );
 
-            server.Start();
-
-            Thread.Sleep(1000);
+            server.StartAsync();
 
             serviceProviderMockFirst.Verify(sp => sp.OnBoot(It.IsAny<IContainer>()), Times.Once);
             serviceProviderMockFirst.Verify(sp => sp.OnPostBoot(It.IsAny<IContainer>()), Times.Once);
