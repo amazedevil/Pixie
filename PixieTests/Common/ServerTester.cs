@@ -6,6 +6,7 @@ using PixieCoreTests.Client;
 using System;
 using System.Threading;
 using DryIoc;
+using Pixie.Core.Services;
 
 namespace PixieTests.Common
 {
@@ -18,6 +19,15 @@ namespace PixieTests.Common
 
                 (this.context.Resolve<PXServer>() as TestServer).Action(data);
             }
+        }
+
+        private class MessageHandlerRegisterServiceProvider : IPXServiceProvider
+        {
+            public void OnBoot(IContainer container) {
+                container.Resolve<IPXMessageHandlerService>().RegisterHandlerType<MessageHandler>();
+            }
+
+            public void OnPostBoot(IContainer container) {}
         }
 
         public class TestServer : PXServer
@@ -34,13 +44,8 @@ namespace PixieTests.Common
 
             protected override IPXServiceProvider[] GetServiceProviders() {
                 return new IPXServiceProvider[] {
-                    CreateEnvServiceProvider()
-                };
-            }
-
-            protected override Type[] GetMessageHandlerTypes() {
-                return new Type[] {
-                    typeof(MessageHandler)
+                    CreateEnvServiceProvider(),
+                    new MessageHandlerRegisterServiceProvider(),
                 };
             }
 
