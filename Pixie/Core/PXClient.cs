@@ -20,26 +20,22 @@ namespace Pixie.Core
         private Stream stream;
         private TcpClient client;
         private Container container;
-        private Dictionary<Type, Type> messageHandlerMap = new Dictionary<Type, Type>();
         private HashSet<int> subscriptions = new HashSet<int>();
+
+        private IPXMessageHandlerService messageHandlerService;
 
         public event Action<PXClient> OnDisconnect;
 
         public bool IsClosed { get; private set; }
 
-        public PXClient(TcpClient tcpClient, Container container, Type[] messageHandlerTypes) {
+        public PXClient(TcpClient tcpClient, Container container) {
             Id = Guid.NewGuid().ToString();
             client = tcpClient;
             stream = container.Resolve<PXStreamWrapperService>().WrapStream(client.GetStream());
 
-            foreach (var t in messageHandlerTypes) {
-                messageHandlerMap[t.GetProperty(
-                    PXMessageInfo.MESSAGE_CLASS_FIELD_DATA_TYPE,
-                    BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy
-                ).GetValue(null) as Type] = t;
-            }
+            messageHandlerService = container.Resolve<IPXMessageHandlerService>();
 
-            StreamReader = new PXMessageReader(stream, messageHandlerMap.Keys.ToArray());
+            StreamReader = new PXMessageReader(stream, messageHandlerService.GetMessageTypes());
             StreamWriter = new PXMessageWriter(stream);
 
             this.container = container;
@@ -114,7 +110,7 @@ namespace Pixie.Core
         }
 
         private PXMessageHandlerRaw CreateMessageHandler(object message) {
-            var handler = (PXMessageHandlerRaw)Activator.CreateInstance(messageHandlerMap[message.GetType()]);
+            var handler = messageHandlerService.Instantiate(message.GetType());
             handler.SetupData(message);
             return handler;
         }

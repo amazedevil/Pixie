@@ -31,7 +31,7 @@ namespace Pixie.Core.Messages
             get { return messages.Count > 0; }
         }
 
-        public PXMessageReader(Stream stream, Type[] messageTypes) {
+        public PXMessageReader(Stream stream, IEnumerable<Type> messageTypes) {
             this.stream = stream;
 
             this.messageTypes = new Dictionary<int, Type>();

@@ -25,10 +25,6 @@ namespace Pixie.Core
             return new IPXServiceProvider[] { };
         }
 
-        protected virtual Type[] GetMessageHandlerTypes() {
-            return new Type[] { };
-        }
-
         protected virtual Type GetDisconnectMessageHandlerType() {
             return null;
         }
@@ -62,6 +58,8 @@ namespace Pixie.Core
 
                 SetupWrappers();
 
+                CloseRegistrations();
+
                 foreach (var module in GetServiceProviders()) {
                     module.OnPostBoot(this.container);
                 }
@@ -78,8 +76,7 @@ namespace Pixie.Core
                 while (true) {
                     PXClient client = new PXClient(
                         await tcpListener.AcceptTcpClientAsync(),
-                        this.container,
-                        this.GetMessageHandlerTypes()
+                        this.container
                     );
 
                     clients[client.Id] = client;
@@ -116,6 +113,12 @@ namespace Pixie.Core
             cliServer = new PXCliServer(this.container);
         }
 
+        private void CloseRegistrations() {
+            if (this.container.Resolve<IPXMessageHandlerService>() is PXMessageHandlerService service) {
+                service.CloseRegistration();
+            }
+        }
+
         protected internal void Disconnect() {
             this.container.Logger().Info("Stopping server");
 
@@ -140,6 +143,7 @@ namespace Pixie.Core
             container.Register<PXErrorHandlingService>();
             container.RegisterDelegate<IPXEnvironmentService>(r => new PXEnvironmentService());
             container.RegisterDelegate(r => new PXLoggerService(r.Resolve<IContainer>()));
+            container.RegisterDelegate<IPXMessageHandlerService>(_ => new PXMessageHandlerService(), Reuse.Singleton);
 
             return container;
         }
