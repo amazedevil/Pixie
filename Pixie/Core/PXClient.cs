@@ -33,7 +33,7 @@ namespace Pixie.Core
             client = tcpClient;
             stream = container.Resolve<PXStreamWrapperService>().WrapStream(client.GetStream());
 
-            messageHandlerService = container.Resolve<IPXMessageHandlerService>();
+            messageHandlerService = container.Handlers();
 
             StreamReader = new PXMessageReader(stream, messageHandlerService.GetMessageTypes());
             StreamWriter = new PXMessageWriter(stream);

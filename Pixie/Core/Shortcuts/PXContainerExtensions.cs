@@ -30,6 +30,10 @@ public static class PXContainerExtensions
         return resolver.Resolve<IPXMessageSenderService>();
     }
 
+    public static IPXMessageHandlerService Handlers(this IResolver resolver) {
+        return resolver.Resolve<IPXMessageHandlerService>();
+    }
+
     //internal
 
     internal static PXErrorHandlingService Errors(this IResolver resolver) {
