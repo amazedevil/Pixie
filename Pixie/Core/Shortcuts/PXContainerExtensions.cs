@@ -22,7 +22,7 @@ public static class PXContainerExtensions
         return resolver.Resolve<IPXClientService>();
     }
 
-    public static PXSchedulerService SchedulerService(this IResolver resolver) {
+    public static PXSchedulerService Scheduler(this IResolver resolver) {
         return resolver.Resolve<PXSchedulerService>();
     }
 
