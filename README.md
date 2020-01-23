@@ -33,12 +33,6 @@ class MyServer : PXServer
 }
 ```
 
-When it's ready, we can run it:
-
-```csharp
-(new RTHSServer()).Start();
-```
-
 Service providers, are classes that should fill our system with logic, in our case - register message handler class:
 
 ```csharp
@@ -88,6 +82,18 @@ Before we start server, we should set environment parameters. Pixie read ones fr
 
 - PX_HOST - hostname or ip of our server
 - PX_PORT - port our server is listening to
+
+At last, we can start our server, e.g. from Main:
+
+```csharp
+class Program
+{
+    static void Main(string[] args)
+    {
+        (new RTHSServer()).StartSync();
+    }
+}
+```
 
 So what about Unity side, first of all we should import package [PixieUnity.unitypackage](https://github.com/amazedevil/PixieUnity/releases/) (or install client code somehow else, see [link](https://github.com/amazedevil/PixieUnity#installation) for details).
 
