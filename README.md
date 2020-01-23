@@ -23,11 +23,11 @@ After that, let's inherit PXServer by some new class:
 
 ```csharp
 class MyServer : PXServer
-{
-    //Here we should pass message handler (we'll look at ones later) types
-    protected override Type[] GetMessageHandlerTypes() {
-        return new Type[] {
-            typeof(MessageHandlerSaySomething),
+{    
+    //Here we should create service provider (we'll look at ones later)
+    protected override IPXServiceProvider[] GetServiceProviders() {
+        return new IPXServiceProvider[] {
+            new MyServiceProvider(),
         };
     }
 }
@@ -37,6 +37,23 @@ When it's ready, we can run it:
 
 ```csharp
 (new RTHSServer()).Start();
+```
+
+Service providers, are classes that should fill our system with logic, in our case - register message handler class:
+
+```csharp
+class MyServiceProvider : IPXServiceProvider
+{
+    //first, every service provider method OnBoot called
+    public void OnBoot(IContainer container) {
+        //we'll write MessageHandlerSaySomething class next
+        container.Handlers().RegisterHandlerType<MessageHandlerSaySomething>();
+    }
+
+    //after all OnBoot methods of all providers called, OnPostBoot method of every SP called,
+    //so here we may be sure that every service is registered and we can get the one we need
+    public void OnPostBoot(IContainer container) {}
+}
 ```
 
 Let's see what MessageHandlerSaySomething consists of:
