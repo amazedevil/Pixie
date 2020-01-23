@@ -24,7 +24,7 @@ namespace PixieTests.Common
         private class MessageHandlerRegisterServiceProvider : IPXServiceProvider
         {
             public void OnBoot(IContainer container) {
-                container.Resolve<IPXMessageHandlerService>().RegisterHandlerType<MessageHandler>();
+                container.Handlers().RegisterHandlerType<MessageHandler>();
             }
 
             public void OnPostBoot(IContainer container) {}
