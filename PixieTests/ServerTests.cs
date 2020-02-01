@@ -67,6 +67,8 @@ namespace PixieTests
             });
         }
 
+        //Disconnection message handler test
+
         private class DisconnectTestServiceProvider : PXMessageHandlerBase<PXMessageVoid>, IPXServiceProvider
         {
             private Action disconnectAction;
