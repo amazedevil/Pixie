@@ -25,10 +25,6 @@ namespace Pixie.Core
             return new IPXServiceProvider[] { };
         }
 
-        protected virtual Type GetDisconnectMessageHandlerType() {
-            return null;
-        }
-
         protected virtual IPXStreamWrapper[] GetStreamWrappers(IResolverContext context) {
             return new IPXStreamWrapper[] { };
         }
@@ -101,7 +97,7 @@ namespace Pixie.Core
         }
 
         private void DisconnectClient(PXClient client) {
-            client.ProcessClosingMessage(GetDisconnectMessageHandlerType());
+            client.ProcessClosingMessage();
             clients.Remove(client.Id);
         }
 

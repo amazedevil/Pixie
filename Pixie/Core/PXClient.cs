@@ -87,11 +87,13 @@ namespace Pixie.Core
             return subscriptions.Contains(subscriptionId);
         }
 
-        public void ProcessClosingMessage(Type closeMessageHandlerType) {
-            if (closeMessageHandlerType != null) {
+        public void ProcessClosingMessage() {
+            var handler = this.container.Handlers().InstantiateForClientDisconnect();
+
+            if (handler != null) {
                 this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
                     this.container.Middlewares().HandleOverMiddlewares(
-                        delegate (IResolverContext ctx) { (Activator.CreateInstance(closeMessageHandlerType) as PXMessageHandlerRaw).Handle(ctx); },
+                        delegate (IResolverContext ctx) { handler.Handle(ctx); },
                         messageContext,
                         PXMiddlewareService.Scope.Message
                     );

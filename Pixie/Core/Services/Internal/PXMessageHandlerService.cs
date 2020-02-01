@@ -9,7 +9,13 @@ namespace Pixie.Core.Services.Internal
 {
     internal class PXMessageHandlerService : IPXMessageHandlerService
     {
+        private enum SpecificHandler
+        {
+            ClientDisconnect
+        }
+
         private IDictionary<Type, Func<PXMessageHandlerRaw>> messageHandlerProviders = new Dictionary<Type, Func<PXMessageHandlerRaw>>();
+        private IDictionary<SpecificHandler, Func<PXMessageHandlerRaw>> specificMessageHandlerProviders = new Dictionary<SpecificHandler, Func<PXMessageHandlerRaw>>();
 
         private volatile bool registrationsAllowed = true;
 
@@ -28,6 +34,14 @@ namespace Pixie.Core.Services.Internal
             ).GetValue(null) as Type, delegate { return Activator.CreateInstance(messageHandlerType) as PXMessageHandlerRaw; });
         }
 
+        public void RegisterProviderForClientDisconnect(Func<PXMessageHandlerBase<PXMessageVoid>> provider) {
+            RegisterSpecificMessageHandler(SpecificHandler.ClientDisconnect, provider);
+        }
+
+        public void RegisterProviderForClientDisconnect(Type messageHandlerType) {
+            RegisterProviderForClientDisconnect(delegate { return Activator.CreateInstance(messageHandlerType) as PXMessageHandlerBase<PXMessageVoid>; });
+        }
+
         public void RegisterProvider(Type messageType, Func<PXMessageHandlerRaw> provider) {
             if (!registrationsAllowed) {
                 throw new PXRegistrationsAfterBoot();
@@ -44,8 +58,28 @@ namespace Pixie.Core.Services.Internal
             return Instantiate(typeof(T)) as PXMessageHandlerBase<T>;
         }
 
+        public PXMessageHandlerBase<PXMessageVoid> InstantiateForClientDisconnect() {
+            return InstantiateSpecificMessageHandler(SpecificHandler.ClientDisconnect) as PXMessageHandlerBase<PXMessageVoid>;
+        }
+
         public IEnumerable<Type> GetMessageTypes() {
             return messageHandlerProviders.Keys;
+        }
+
+        private void RegisterSpecificMessageHandler(SpecificHandler handler, Func<PXMessageHandlerRaw> provider) {
+            if (provider != null) {
+                specificMessageHandlerProviders[handler] = provider;
+            } else {
+                specificMessageHandlerProviders.Remove(handler);
+            }
+        }
+
+        private PXMessageHandlerRaw InstantiateSpecificMessageHandler(SpecificHandler handler) {
+            if (!specificMessageHandlerProviders.ContainsKey(handler)) {
+                return null;
+            }
+
+            return specificMessageHandlerProviders[handler]();
         }
 
         internal void CloseRegistration() {
