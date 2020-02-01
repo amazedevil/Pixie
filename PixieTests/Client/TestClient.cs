@@ -81,6 +81,10 @@ namespace PixieCoreTests.Client
             }
         }
 
+        public void Stop() {
+            connection.Close();
+        }
+
         private static bool ValidateServerCertificate(
               object sender,
               X509Certificate certificate,
