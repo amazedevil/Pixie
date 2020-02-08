@@ -25,10 +25,6 @@ namespace Pixie.Core
             return new IPXServiceProvider[] { };
         }
 
-        protected virtual IPXStreamWrapper[] GetStreamWrappers(IResolverContext context) {
-            return new IPXStreamWrapper[] { };
-        }
-
         protected virtual bool IsCliServerActive
         {
             get { return false; }
@@ -51,8 +47,6 @@ namespace Pixie.Core
                 foreach (var module in GetServiceProviders()) {
                     module.OnBoot(this.container);
                 }
-
-                SetupWrappers();
 
                 CloseRegistrations();
 
@@ -135,7 +129,7 @@ namespace Pixie.Core
 
             container.RegisterDelegate(r => new PXSchedulerService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.Register<PXMiddlewareService>(Reuse.Singleton);
-            container.Register<PXStreamWrapperService>(Reuse.Singleton);
+            container.Register<IPXStreamWrapperService, PXStreamWrapperService>(Reuse.Singleton);
             container.Register<PXErrorHandlingService>();
             container.RegisterDelegate<IPXEnvironmentService>(r => new PXEnvironmentService());
             container.RegisterDelegate(r => new PXLoggerService(r.Resolve<IContainer>()));
@@ -146,10 +140,6 @@ namespace Pixie.Core
 
         private void StartScheduler() {
             container.Resolve<PXSchedulerService>().Launch();
-        }
-
-        private void SetupWrappers() {
-            container.Resolve<PXStreamWrapperService>().SetupWrappers(this.GetStreamWrappers(container));
         }
 
         //IPXMessageSenderService

@@ -31,7 +31,7 @@ namespace Pixie.Core
         public PXClient(TcpClient tcpClient, Container container) {
             Id = Guid.NewGuid().ToString();
             client = tcpClient;
-            stream = container.Resolve<PXStreamWrapperService>().WrapStream(client.GetStream());
+            stream = container.Resolve<IPXStreamWrapperService>().WrapStream(client.GetStream());
 
             messageHandlerService = container.Handlers();
 

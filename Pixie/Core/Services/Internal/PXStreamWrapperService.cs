@@ -6,14 +6,14 @@ using System.Text;
 
 namespace Pixie.Core.Services.Internal
 {
-    internal class PXStreamWrapperService
+    internal class PXStreamWrapperService : IPXStreamWrapperService
     {
-        IPXStreamWrapper[] wrappers;
+        private List<IPXStreamWrapper> wrappers = new List<IPXStreamWrapper>();
 
         public PXStreamWrapperService() { }
 
-        public void SetupWrappers(IPXStreamWrapper[] wrappers) {
-            this.wrappers = wrappers;
+        public void AddWrapper(IPXStreamWrapper wrapper) {
+            this.wrappers.Add(wrapper);
         }
 
         public Stream WrapStream(Stream stream) {
