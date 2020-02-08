@@ -75,38 +75,38 @@ namespace PixieTests
 
         //Disconnection message handler test
 
-        private class DisconnectTestServiceProvider : PXMessageHandlerBase<PXMessageVoid>, IPXServiceProvider
+        private class DisconnectTestServer : ServerTester.TestServer, IPXServiceProvider
         {
-            private Action disconnectAction;
+            private class ActionExecutorMessageHandler : PXMessageHandlerBase<PXMessageVoid>
+            {
+                private Action disconnectAction;
 
-            public DisconnectTestServiceProvider(Action disconnectAction) {
-                this.disconnectAction = disconnectAction;
+                public ActionExecutorMessageHandler(Action disconnectAction) {
+                    this.disconnectAction = disconnectAction;
+                }
+
+                public override void Handle() {
+                    disconnectAction();
+                }
+            }
+
+            private ActionExecutorMessageHandler handler;
+
+            internal DisconnectTestServer(Action disconnectAction, string host, int port) : base(host, port) {
+                this.handler = new ActionExecutorMessageHandler(disconnectAction);
             }
 
             public void OnBoot(IContainer container) {
             }
 
             public void OnPostBoot(IContainer container) {
-                container.Handlers().RegisterProviderForClientDisconnect(delegate { return this; });
-            }
-
-            public override void Handle() {
-                disconnectAction();
-            }
-        }
-
-        private class DisconnectTestServer : ServerTester.TestServer
-        {
-            private Action disconnectAction;
-
-            internal DisconnectTestServer(Action disconnectAction, string host, int port) : base(host, port) {
-                this.disconnectAction = disconnectAction;
+                container.Handlers().RegisterProviderForClientDisconnect(delegate { return handler; });
             }
 
             protected override IPXServiceProvider[] GetServiceProviders() {
                 return new IPXServiceProvider[] {
                     CreateEnvServiceProvider(),
-                    new DisconnectTestServiceProvider(this.disconnectAction),
+                    this,
                 };
             }
         }
