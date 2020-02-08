@@ -13,6 +13,7 @@ using PixieTests.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -45,18 +46,23 @@ namespace PixieTests
             }
         }
 
-        private class SslTestServer : ServerTester.TestServer
+        private class SslTestServer : ServerTester.TestServer, IPXServiceProvider
         {
             internal SslTestServer(string host, int port) : base(host, port) { }
 
-            protected override IPXStreamWrapper[] GetStreamWrappers(IResolverContext context) {
-                return new IPXStreamWrapper[] {
-                    new PXSSLStreamWrapper(context)
-                };
+            protected override IPXServiceProvider[] GetServiceProviders() {
+                return base.GetServiceProviders().Concat(new IPXServiceProvider[] { this }).ToArray();
             }
 
             protected override EnvironmentDefaultsServiceProvider CreateEnvServiceProvider() {
                 return new EnvPlusSsl(this.Host, this.Port);
+            }
+
+            public void OnBoot(IContainer container) {
+            }
+
+            public void OnPostBoot(IContainer container) {
+                container.StreamWrappers().AddWrapper(new PXSSLStreamWrapper(container));
             }
         }
 
