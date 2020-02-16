@@ -45,13 +45,13 @@ namespace Pixie.Core
         public async Task Start() {
             try {
                 foreach (var module in GetServiceProviders()) {
-                    module.OnBoot(this.container);
+                    module.OnRegister(this.container);
                 }
 
                 CloseRegistrations();
 
                 foreach (var module in GetServiceProviders()) {
-                    module.OnPostBoot(this.container);
+                    module.OnInitialize(this.container);
                 }
 
                 StartScheduler();

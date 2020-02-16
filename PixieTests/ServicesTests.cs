@@ -11,10 +11,10 @@ namespace PixieTests
     class ServicesTests {
         private class TestServiceProvider : IPXServiceProvider
         {
-            public void OnBoot(IContainer container) {
+            public void OnRegister(IContainer container) {
             }
 
-            public void OnPostBoot(IContainer container) {
+            public void OnInitialize(IContainer container) {
                 Assert.IsNotNull(container.Logger());
                 Assert.IsNotNull(container.Middlewares());
                 Assert.IsNotNull(container.Env());

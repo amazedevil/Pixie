@@ -7,7 +7,7 @@ namespace Pixie.Core.ServiceProviders
 {
     public interface IPXServiceProvider
     {
-        void OnBoot(IContainer container);
-        void OnPostBoot(IContainer container);
+        void OnRegister(IContainer container);
+        void OnInitialize(IContainer container);
     }
 }

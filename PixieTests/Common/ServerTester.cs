@@ -23,11 +23,11 @@ namespace PixieTests.Common
 
         private class MessageHandlerRegisterServiceProvider : IPXServiceProvider
         {
-            public void OnBoot(IContainer container) {
+            public void OnRegister(IContainer container) {
                 container.Handlers().RegisterHandlerType<MessageHandler>();
             }
 
-            public void OnPostBoot(IContainer container) {}
+            public void OnInitialize(IContainer container) {}
         }
 
         public class TestServer : PXServer

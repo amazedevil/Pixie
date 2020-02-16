@@ -20,7 +20,7 @@ namespace PixieTests.Common
             this.port = port;
         }
 
-        public void OnBoot(IContainer container) {
+        public void OnRegister(IContainer container) {
             container.RegisterDelegate(delegate(IResolverContext context) {
                 var environmentMock = new Mock<IPXEnvironmentService>();
 
@@ -33,7 +33,7 @@ namespace PixieTests.Common
             }, ifAlreadyRegistered: IfAlreadyRegistered.Replace);
         }
 
-        public void OnPostBoot(IContainer container) {
+        public void OnInitialize(IContainer container) {
         }
 
         public virtual void HandleMock(Mock<IPXEnvironmentService> mock) {

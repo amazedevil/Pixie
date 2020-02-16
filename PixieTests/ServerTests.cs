@@ -58,10 +58,10 @@ namespace PixieTests
                 return new EnvPlusSsl(this.Host, this.Port);
             }
 
-            public void OnBoot(IContainer container) {
+            public void OnRegister(IContainer container) {
             }
 
-            public void OnPostBoot(IContainer container) {
+            public void OnInitialize(IContainer container) {
                 container.StreamWrappers().AddWrapper(new PXSSLStreamWrapper(container));
             }
         }
@@ -96,10 +96,10 @@ namespace PixieTests
                 this.handler = new ActionExecutorMessageHandler(disconnectAction);
             }
 
-            public void OnBoot(IContainer container) {
+            public void OnRegister(IContainer container) {
             }
 
-            public void OnPostBoot(IContainer container) {
+            public void OnInitialize(IContainer container) {
                 container.Handlers().RegisterProviderForClientDisconnect(delegate { return handler; });
             }
 

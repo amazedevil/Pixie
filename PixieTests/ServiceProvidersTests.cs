@@ -32,11 +32,11 @@ namespace PixieTests
 
             var sequence = new MockSequence();
 
-            serviceProviderMockFirst.InSequence(sequence).Setup(sp => sp.OnBoot(It.IsAny<IContainer>()));
-            serviceProviderMockSecond.InSequence(sequence).Setup(sp => sp.OnBoot(It.IsAny<IContainer>()));
+            serviceProviderMockFirst.InSequence(sequence).Setup(sp => sp.OnRegister(It.IsAny<IContainer>()));
+            serviceProviderMockSecond.InSequence(sequence).Setup(sp => sp.OnRegister(It.IsAny<IContainer>()));
 
-            serviceProviderMockFirst.InSequence(sequence).Setup(sp => sp.OnPostBoot(It.IsAny<IContainer>()));
-            serviceProviderMockSecond.InSequence(sequence).Setup(sp => sp.OnPostBoot(It.IsAny<IContainer>()));
+            serviceProviderMockFirst.InSequence(sequence).Setup(sp => sp.OnInitialize(It.IsAny<IContainer>()));
+            serviceProviderMockSecond.InSequence(sequence).Setup(sp => sp.OnInitialize(It.IsAny<IContainer>()));
 
             TestServer server = new TestServer(
                 new IPXServiceProvider[] {
@@ -48,11 +48,11 @@ namespace PixieTests
 
             server.StartAsync();
 
-            serviceProviderMockFirst.Verify(sp => sp.OnBoot(It.IsAny<IContainer>()), Times.Once);
-            serviceProviderMockFirst.Verify(sp => sp.OnPostBoot(It.IsAny<IContainer>()), Times.Once);
+            serviceProviderMockFirst.Verify(sp => sp.OnRegister(It.IsAny<IContainer>()), Times.Once);
+            serviceProviderMockFirst.Verify(sp => sp.OnInitialize(It.IsAny<IContainer>()), Times.Once);
 
-            serviceProviderMockSecond.Verify(sp => sp.OnBoot(It.IsAny<IContainer>()), Times.Once);
-            serviceProviderMockSecond.Verify(sp => sp.OnPostBoot(It.IsAny<IContainer>()), Times.Once);
+            serviceProviderMockSecond.Verify(sp => sp.OnRegister(It.IsAny<IContainer>()), Times.Once);
+            serviceProviderMockSecond.Verify(sp => sp.OnInitialize(It.IsAny<IContainer>()), Times.Once);
         }
     }
 }
