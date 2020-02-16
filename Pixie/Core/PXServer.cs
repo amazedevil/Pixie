@@ -58,10 +58,7 @@ namespace Pixie.Core
 
                 StartCliServer();
 
-                this.container.Logger().Info("Starting socket server");
-
-                tcpListener = new TcpListener(IPAddress.Any, this.container.Env().Port());
-                tcpListener.Start();
+                StartSocketServer();
 
                 while (true) {
                     PXClient client = new PXClient(
@@ -100,7 +97,16 @@ namespace Pixie.Core
                 return;
             }
 
+            this.container.Logger().Info("Starting CLI server");
+
             cliServer = new PXCliServer(this.container);
+        }
+
+        private void StartSocketServer() {
+            this.container.Logger().Info("Starting socket server");
+
+            tcpListener = new TcpListener(IPAddress.Any, this.container.Env().Port());
+            tcpListener.Start();
         }
 
         private void CloseRegistrations() {
@@ -110,7 +116,7 @@ namespace Pixie.Core
         }
 
         protected internal void Disconnect() {
-            this.container.Logger().Info("Stopping server");
+            this.container.Logger().Info("Stopping socket server");
 
             tcpListener?.Stop();
 
@@ -139,6 +145,8 @@ namespace Pixie.Core
         }
 
         private void StartScheduler() {
+            this.container.Logger().Info("Starting scheduler");
+
             container.Resolve<PXSchedulerService>().Launch();
         }
 
