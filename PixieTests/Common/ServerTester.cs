@@ -17,22 +17,15 @@ namespace PixieTests.Common
             public override void Handle(TestMessages.TestMessageType1 data) {
                 base.Handle(data);
 
-                (this.context.Resolve<PXServer>() as TestServer).Action(data);
+                var serverToClientMessage = (this.context.Resolve<PXServer>() as TestServer).Action(data);
+
+                this.context.Sender().Send(this.context.Sender().GetClientIds(), serverToClientMessage);
             }
         }
 
-        private class MessageHandlerRegisterServiceProvider : IPXServiceProvider
+        public class TestServer : PXServer, IPXServiceProvider
         {
-            public void OnRegister(IContainer container) {
-                container.Handlers().RegisterHandlerType<MessageHandler>();
-            }
-
-            public void OnInitialize(IContainer container) {}
-        }
-
-        public class TestServer : PXServer
-        {
-            internal Action<object> Action;
+            internal Func<object, object> Action;
 
             public string Host { get; private set; }
             public int Port { get; private set; }
@@ -45,22 +38,33 @@ namespace PixieTests.Common
             protected override IPXServiceProvider[] GetServiceProviders() {
                 return new IPXServiceProvider[] {
                     CreateEnvServiceProvider(),
-                    new MessageHandlerRegisterServiceProvider(),
+                    this,
                 };
             }
 
             protected virtual EnvironmentDefaultsServiceProvider CreateEnvServiceProvider() {
                 return new EnvironmentDefaultsServiceProvider(this.Host, this.Port);
             }
+
+            public virtual void OnRegister(IContainer container) {
+                container.Handlers().RegisterHandlerType<MessageHandler>();
+            }
+
+            public virtual void OnInitialize(IContainer container) {
+            }
         }
 
         public static void PlayCommonServerTest(TestServer server, Action<TestClient.Builder> builderConfigurator = null) {
-            var message = TestMessages.TestMessageType1Sample1();
-            ManualResetEvent dataReceivedEvent = new ManualResetEvent(false);
+            var clientToServerMessage = TestMessages.TestMessageType1Sample1();
+            var serverToClientMessage = TestMessages.TestMessageType2Sample1();
+            ManualResetEvent serverReceivedDataEvent = new ManualResetEvent(false);
+            ManualResetEvent clientReceivedDataEvent = new ManualResetEvent(false);
 
             server.Action = delegate (object receivedMessage) {
-                Assert.AreEqual(receivedMessage, message);
-                dataReceivedEvent.Set();
+                Assert.AreEqual(receivedMessage, clientToServerMessage);
+                serverReceivedDataEvent.Set();
+
+                return serverToClientMessage;
             };
 
             var clientBuilder = TestClient.Builder.Create(
@@ -68,9 +72,12 @@ namespace PixieTests.Common
                 server.Port
             ).EventTypes(
                 new Type[] {
-                    typeof(TestMessages.TestMessageType1)
+                    typeof(TestMessages.TestMessageType2)
                 }
-            );
+            ).OnMessageReceived(delegate(object receivedMessage) {
+                Assert.AreEqual(receivedMessage, serverToClientMessage);
+                clientReceivedDataEvent.Set();
+            });
 
             builderConfigurator?.Invoke(clientBuilder);
 
@@ -79,13 +86,18 @@ namespace PixieTests.Common
             server.StartAsync();
             client.Run();
 
-            client.SendMessage(message);
+            client.SendMessage(clientToServerMessage);
 
-            if (!dataReceivedEvent.WaitOne(5000)) {
-                Assert.Fail("Message timeout");
+            if (!serverReceivedDataEvent.WaitOne(5000)) {
+                Assert.Fail("Server message timeout");
             }
 
-            dataReceivedEvent.Reset();
+            if (!clientReceivedDataEvent.WaitOne(5000)) {
+                Assert.Fail("Client message timeout");
+            }
+
+            serverReceivedDataEvent.Reset();
+            clientReceivedDataEvent.Reset();
         }
     }
 }

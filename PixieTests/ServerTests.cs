@@ -46,22 +46,17 @@ namespace PixieTests
             }
         }
 
-        private class SslTestServer : ServerTester.TestServer, IPXServiceProvider
+        private class SslTestServer : ServerTester.TestServer
         {
             internal SslTestServer(string host, int port) : base(host, port) { }
-
-            protected override IPXServiceProvider[] GetServiceProviders() {
-                return base.GetServiceProviders().Concat(new IPXServiceProvider[] { this }).ToArray();
-            }
 
             protected override EnvironmentDefaultsServiceProvider CreateEnvServiceProvider() {
                 return new EnvPlusSsl(this.Host, this.Port);
             }
 
-            public void OnRegister(IContainer container) {
-            }
+            public override void OnInitialize(IContainer container) {
+                base.OnInitialize(container);
 
-            public void OnInitialize(IContainer container) {
                 container.StreamWrappers().AddWrapper(new PXSSLStreamWrapper(container));
             }
         }
@@ -96,18 +91,10 @@ namespace PixieTests
                 this.handler = new ActionExecutorMessageHandler(disconnectAction);
             }
 
-            public void OnRegister(IContainer container) {
-            }
+            public override void OnInitialize(IContainer container) {
+                base.OnInitialize(container);
 
-            public void OnInitialize(IContainer container) {
                 container.Handlers().RegisterProviderForClientDisconnect(delegate { return handler; });
-            }
-
-            protected override IPXServiceProvider[] GetServiceProviders() {
-                return new IPXServiceProvider[] {
-                    CreateEnvServiceProvider(),
-                    this,
-                };
             }
         }
 
