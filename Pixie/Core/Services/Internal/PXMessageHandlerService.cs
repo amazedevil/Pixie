@@ -44,7 +44,7 @@ namespace Pixie.Core.Services.Internal
 
         public void RegisterProvider(Type messageType, Func<PXMessageHandlerRaw> provider) {
             if (!registrationsAllowed) {
-                throw new PXRegistrationsAfterBoot();
+                throw new PXRegistrationOutOfTime();
             }
 
             messageHandlerProviders[messageType] = provider;
