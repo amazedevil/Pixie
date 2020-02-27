@@ -10,11 +10,13 @@ namespace Pixie.Core.Services
         public enum Scope
         {
             None,
-            ClientMessage,
-            Client,
+            SocketClientMessage,
+            SocketClient,
             Job,
             CliCommand,
-            Server
+            CliServer,
+            SocketServer,
+            PixieServer
         }
 
         private PXLoggerService logger;

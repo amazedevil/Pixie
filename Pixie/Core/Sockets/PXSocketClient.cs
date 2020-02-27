@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace Pixie.Core
 {
-    internal class PXClient : IPXClientService
+    internal class PXSocketClient : IPXClientService
     {
         public string Id { get; private set; }
         public PXMessageReader StreamReader { get; private set; }
@@ -19,26 +19,26 @@ namespace Pixie.Core
 
         private Stream stream;
         private TcpClient client;
-        private Container container;
+        private IResolverContext context;
         private HashSet<int> subscriptions = new HashSet<int>();
 
         private IPXMessageHandlerService messageHandlerService;
 
-        public event Action<PXClient> OnDisconnect;
+        public event Action<PXSocketClient> OnDisconnect;
 
         public bool IsClosed { get; private set; }
 
-        public PXClient(TcpClient tcpClient, Container container) {
+        public PXSocketClient(TcpClient tcpClient, IResolverContext context) {
             Id = Guid.NewGuid().ToString();
             client = tcpClient;
-            stream = container.StreamWrappers().WrapStream(client.GetStream());
+            stream = context.StreamWrappers().WrapStream(client.GetStream());
 
-            messageHandlerService = container.Handlers();
+            messageHandlerService = context.Handlers();
 
             StreamReader = new PXMessageReader(stream, messageHandlerService.GetMessageTypes());
             StreamWriter = new PXMessageWriter(stream);
 
-            this.container = container;
+            this.context = context;
 
             StreamReader.OnDataAvailable += delegate (PXMessageReader reader) {
                 Process();
@@ -65,7 +65,7 @@ namespace Pixie.Core
             try {
                 if (StreamReader.HasMessages) {
                     this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
-                        this.container.Middlewares().HandleOverMiddlewares(
+                        this.context.Middlewares().HandleOverMiddlewares(
                             delegate (IResolverContext ctx) { CreateMessageHandler(StreamReader.DequeueMessage()).Handle(ctx); },
                             messageContext,
                             PXMiddlewareService.Scope.Message
@@ -75,12 +75,12 @@ namespace Pixie.Core
             } catch (Exception e) {
                 Close();
 
-                this.container.Errors().Handle(e, PXErrorHandlingService.Scope.ClientMessage);
+                this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
             }
         }
 
         private void OnClientError(Exception e) {
-            this.container.Errors().Handle(e, PXErrorHandlingService.Scope.Client);
+            this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClient);
         }
 
         public bool IsSubscribed(int subscriptionId) {
@@ -88,11 +88,11 @@ namespace Pixie.Core
         }
 
         public void ProcessClosingMessage() {
-            var handler = this.container.Handlers().InstantiateForClientDisconnect();
+            var handler = this.context.Handlers().InstantiateForClientDisconnect();
 
             if (handler != null) {
                 this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
-                    this.container.Middlewares().HandleOverMiddlewares(
+                    this.context.Middlewares().HandleOverMiddlewares(
                         delegate (IResolverContext ctx) { handler.Handle(ctx); },
                         messageContext,
                         PXMiddlewareService.Scope.Message
@@ -118,7 +118,7 @@ namespace Pixie.Core
         }
 
         private void ExecuteInMessageScope(Action<IResolverContext> action) {
-            using (var messageContext = this.container.OpenScope()) {
+            using (var messageContext = this.context.OpenScope()) {
                 messageContext.Use<IPXClientService>(this);
 
                 action(messageContext);
@@ -126,7 +126,7 @@ namespace Pixie.Core
         }
 
         private void LogRawMessage(string rawMessage) {
-            this.container.Logger().Debug(delegate { return $"Message received: {rawMessage}"; });
+            this.context.Logger().Debug(delegate { return $"Message received: {rawMessage}"; });
         }
 
         //IPXClientService

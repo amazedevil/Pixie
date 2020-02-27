@@ -27,7 +27,11 @@ public static class PXContainerExtensions
     }
 
     public static IPXMessageSenderService Sender(this IResolver resolver) {
-        return resolver.Resolve<IPXMessageSenderService>();
+        return resolver.SenderDispatcher().GetDefaultSender();
+    }
+
+    public static PXSenderDispatcherService SenderDispatcher(this IResolver resolver) {
+        return resolver.Resolve<PXSenderDispatcherService>();
     }
 
     public static IPXMessageHandlerService Handlers(this IResolver resolver) {
@@ -36,6 +40,10 @@ public static class PXContainerExtensions
 
     public static IPXStreamWrapperService StreamWrappers(this IResolver resolver) {
         return resolver.Resolve<IPXStreamWrapperService>();
+    }
+
+    public static PXEndpointService Endpoints(this IResolver resolver) {
+        return resolver.Resolve<PXEndpointService>();
     }
 
     //internal

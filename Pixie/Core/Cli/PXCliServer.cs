@@ -1,4 +1,5 @@
 ﻿using DryIoc;
+using Pixie.Core.Services;
 using Pixie.Core.Services.Internal;
 using System;
 using System.IO.Pipes;
@@ -8,27 +9,35 @@ using System.Threading.Tasks;
 
 namespace Pixie.Core.Cli
 {
-    internal class PXCliServer
+    internal class PXCliServer : PXEndpointService.IEndpoint
     {
-        private Task task;
-        private CancellationTokenSource cancellationTokenSource;
+        private Task task = null;
+        private CancellationTokenSource cancellationTokenSource = null;
 
-        private Container container;
+        private IContainer container;
+        private string pipeName;
 
-        private string pipeName = PXCliConsts.PX_ENV_CLI_PIPE_NAME_DEFAULT;
         private BinaryFormatter formatter = new BinaryFormatter();
 
-        internal PXCliServer(Container container) {
+        internal PXCliServer(string pipeName, IContainer container) {
+            this.pipeName = pipeName;
             this.container = container;
-            pipeName = container.Env().GetString(PXEnvironmentService.ENV_PARAM_CLI_PIPE_NAME, pipeName);
-
-            cancellationTokenSource = new CancellationTokenSource();
-            task = RunServer(cancellationTokenSource.Token);
         }
 
-        internal void Stop() {
-            cancellationTokenSource.Cancel();
-            task.Wait();
+        public Task Start() {
+            async Task Run() {
+                this.task = RunServer();
+                await this.task;
+                this.task = null;
+            }
+
+            return Run();
+        }
+
+        public void Stop() {
+            cancellationTokenSource?.Cancel();
+            cancellationTokenSource = null;
+            task?.Wait();
         }
 
         private void ExecuteInCliScope(Action<IResolverContext> action) {
@@ -37,11 +46,15 @@ namespace Pixie.Core.Cli
             }
         }
 
-        private async Task RunServer(CancellationToken token) {
+        private async Task RunServer() {
+            this.container.Logger().Info("Starting CLI server");
+
+            this.cancellationTokenSource = new CancellationTokenSource();
+
             while (true) {
                 try {
                     using (var pipe = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous)) {
-                        await pipe.WaitForConnectionAsync(token);
+                        await pipe.WaitForConnectionAsync(this.cancellationTokenSource.Token);
 
                         PXCliCommand command = (PXCliCommand)formatter.Deserialize(pipe);
 

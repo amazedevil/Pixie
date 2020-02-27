@@ -3,31 +3,18 @@ using Pixie.Core.Cli;
 using Pixie.Core.ServiceProviders;
 using Pixie.Core.Services.Internal;
 using Pixie.Core.Services;
-using Pixie.Core.StreamWrappers;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace Pixie.Core
 {
-    public class PXServer : IPXMessageSenderService
+    public class PXServer
     {
-        private TcpListener tcpListener;
-        private IDictionary<string, PXClient> clients = new ConcurrentDictionary<string, PXClient>();
         private Container container;
-        private PXCliServer cliServer = null;
+        private Task endpointsProcessingTask = null;
 
         protected virtual IPXServiceProvider[] GetServiceProviders() {
             return new IPXServiceProvider[] { };
-        }
-
-        protected virtual bool IsCliServerActive
-        {
-            get { return false; }
         }
 
         public PXServer() {
@@ -35,14 +22,15 @@ namespace Pixie.Core
         }
 
         public void StartAsync() {
-            _ = Start();
+            Start();
         }
 
         public void StartSync() {
-            Start().Wait();
+            Start();
+            WaitForEndpointsToStop();
         }
 
-        public async Task Start() {
+        public void Start() {
             try {
                 foreach (var module in GetServiceProviders()) {
                     module.OnRegister(this.container);
@@ -56,84 +44,34 @@ namespace Pixie.Core
 
                 StartScheduler();
 
-                StartCliServer();
-
-                StartSocketServer();
-
-                while (true) {
-                    PXClient client = new PXClient(
-                        await tcpListener.AcceptTcpClientAsync(),
-                        this.container
-                    );
-
-                    clients[client.Id] = client;
-
-                    client.OnDisconnect += delegate (PXClient c) {
-                        DisconnectClient(c);
-                    };
-
-                    client.Start();
-
-                    this.container.Logger().Info("Connected client id: " + client.Id);
-                }
+                StartEndpoints();
             } catch (Exception ex) {
-                Disconnect();
-
-                this.container.Errors().Handle(ex, PXErrorHandlingService.Scope.Server);
+                this.container.Errors().Handle(ex, PXErrorHandlingService.Scope.PixieServer);
             }
         }
 
-        public void Stop() {
-            tcpListener?.Stop();
-        }
-
-        private void DisconnectClient(PXClient client) {
-            client.ProcessClosingMessage();
-            clients.Remove(client.Id);
-        }
-
-        private void StartCliServer() {
-            if (!IsCliServerActive) {
-                return;
-            }
-
-            this.container.Logger().Info("Starting CLI server");
-
-            cliServer = new PXCliServer(this.container);
-        }
-
-        private void StartSocketServer() {
-            this.container.Logger().Info("Starting socket server");
-
-            tcpListener = new TcpListener(IPAddress.Any, this.container.Env().Port());
-            tcpListener.Start();
+        public void WaitForEndpointsToStop() {
+            this.endpointsProcessingTask?.Wait();
         }
 
         private void CloseRegistrations() {
-            if (this.container.Resolve<IPXMessageHandlerService>() is PXMessageHandlerService service) {
-                service.CloseRegistration();
-            }
-        }
-
-        protected internal void Disconnect() {
-            this.container.Logger().Info("Stopping socket server");
-
-            tcpListener?.Stop();
-
-            foreach (var client in clients) {
-                client.Value.Close();
+            if (this.container.Handlers() is PXMessageHandlerService messageHandlerService) {
+                messageHandlerService.CloseRegistration();
             }
 
-            cliServer?.Stop();
+            if (this.container.Endpoints() is PXEndpointService endpointService) {
+                endpointService.CloseRegistration();
+            }
         }
 
         private Container CreateContainer() {
             var container = new Container();
 
             container.Use(this);
-            container.Use<IPXMessageSenderService>(this);
 
             container.RegisterDelegate(r => new PXSchedulerService(r.Resolve<IContainer>()), Reuse.Singleton);
+            container.RegisterDelegate(r => new PXEndpointService(r.Resolve<IContainer>()), Reuse.Singleton);
+            container.RegisterDelegate(r => new PXSenderDispatcherService(), Reuse.Singleton);
             container.Register<PXMiddlewareService>(Reuse.Singleton);
             container.Register<IPXStreamWrapperService, PXStreamWrapperService>(Reuse.Singleton);
             container.Register<PXErrorHandlingService>();
@@ -150,28 +88,12 @@ namespace Pixie.Core
             container.Resolve<PXSchedulerService>().Launch();
         }
 
-        //IPXMessageSenderService
+        private async void StartEndpoints() {
+            this.container.Endpoints().BuildEndpoints();
 
-        public void Send(IEnumerable<string> clientIds, object message) {
-            this.container.Logger().Info(
-                "Command sent to clients: " + message.GetType().ToString()
-            );
-
-            foreach (var id in clientIds) {
-                if (clients.ContainsKey(id)) {
-                    clients[id].Send(message);
-                }
-            }
+            this.endpointsProcessingTask = this.container.Endpoints().StartEndpoints();
+            await this.endpointsProcessingTask;
+            this.endpointsProcessingTask = null;
         }
-
-        public void Send(IEnumerable<string> clientIds, object data, int subscriptionId) {
-            this.Send(clientIds.Where(cid => clients.ContainsKey(cid) && clients[cid].IsSubscribed(subscriptionId)), data);
-        }
-
-        public IEnumerable<string> GetClientIds() {
-            return clients.Keys;
-        }
-
-        /////////////////////////
     }
 }
