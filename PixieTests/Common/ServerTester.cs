@@ -27,26 +27,23 @@ namespace PixieTests.Common
         {
             internal Func<object, object> Action;
 
-            public string Host { get; private set; }
+            public string Address { get; private set; }
             public int Port { get; private set; }
 
-            internal TestServer(string host, int port) {
-                this.Host = host;
+            internal TestServer(string address, int port) {
+                this.Address = address;
                 this.Port = port;
             }
 
             protected override IPXServiceProvider[] GetServiceProviders() {
                 return new IPXServiceProvider[] {
-                    CreateEnvServiceProvider(),
                     this,
                 };
             }
 
-            protected virtual EnvironmentDefaultsServiceProvider CreateEnvServiceProvider() {
-                return new EnvironmentDefaultsServiceProvider(this.Host, this.Port);
-            }
-
             public virtual void OnRegister(IContainer container) {
+                container.Endpoints().RegisterSockerServer(this.Address, this.Port);
+
                 container.Handlers().RegisterHandlerType<MessageHandler>();
             }
 
@@ -68,7 +65,7 @@ namespace PixieTests.Common
             };
 
             var clientBuilder = TestClient.Builder.Create(
-                server.Host,
+                server.Address,
                 server.Port
             ).EventTypes(
                 new Type[] {

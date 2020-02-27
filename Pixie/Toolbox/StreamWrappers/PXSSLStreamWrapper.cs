@@ -17,10 +17,8 @@ namespace Pixie.Toolbox.StreamWrappers
 
         private string certificatePath = null;
 
-        public PXSSLStreamWrapper(IResolverContext context) {
-            this.certificatePath = context.Env().GetString(ENV_PARAM_CERTIFICATE_PATH, delegate {
-                throw new PXRequiredEnvironmentParameterNotFound(ENV_PARAM_CERTIFICATE_PATH);
-            });
+        public PXSSLStreamWrapper(string certificatePath) {
+            this.certificatePath = certificatePath;
         }
 
         public Stream Wrap(Stream stream) {

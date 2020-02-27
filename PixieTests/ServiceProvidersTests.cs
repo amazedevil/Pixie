@@ -40,7 +40,6 @@ namespace PixieTests
 
             TestServer server = new TestServer(
                 new IPXServiceProvider[] {
-                    new EnvironmentDefaultsServiceProvider(),
                     serviceProviderMockFirst.Object,
                     serviceProviderMockSecond.Object
                 }

@@ -25,45 +25,30 @@ namespace PixieTests
         //Simple server test
 
         private class SimpleTestServer : ServerTester.TestServer {
-            internal SimpleTestServer(string host, int port) : base(host, port) {}
+            internal SimpleTestServer(string address, int port) : base(address, port) {}
         }
 
         [Test]
         public void ClientToServerMessagePassingTest() {
-            ServerTester.PlayCommonServerTest(new SimpleTestServer("localhost", PortProvider.ProviderPort()));
+            ServerTester.PlayCommonServerTest(new SimpleTestServer("127.0.0.1", PortProvider.ProviderPort()));
         }
 
         //SSL test
 
-        private class EnvPlusSsl : EnvironmentDefaultsServiceProvider
-        {
-            internal EnvPlusSsl(string host, int port) : base(host, port) { }
-
-            public override void HandleMock(Mock<IPXEnvironmentService> mock) {
-                base.HandleMock(mock);
-
-                mock.Setup(e => e.GetString(It.Is<string>(s => s == PXSSLStreamWrapper.ENV_PARAM_CERTIFICATE_PATH), It.IsAny<Func<string>>())).Returns("Resources/certificate.p12");
-            }
-        }
-
         private class SslTestServer : ServerTester.TestServer
         {
-            internal SslTestServer(string host, int port) : base(host, port) { }
-
-            protected override EnvironmentDefaultsServiceProvider CreateEnvServiceProvider() {
-                return new EnvPlusSsl(this.Host, this.Port);
-            }
+            internal SslTestServer(string address, int port) : base(address, port) { }
 
             public override void OnInitialize(IContainer container) {
                 base.OnInitialize(container);
 
-                container.StreamWrappers().AddWrapper(new PXSSLStreamWrapper(container));
+                container.StreamWrappers().AddWrapper(new PXSSLStreamWrapper("Resources/certificate.p12"));
             }
         }
 
         [Test]
         public void SslServerMessagePassingTest() {
-            ServerTester.PlayCommonServerTest(new SslTestServer("localhost", PortProvider.ProviderPort()), delegate(TestClient.Builder builder) {
+            ServerTester.PlayCommonServerTest(new SslTestServer("127.0.0.1", PortProvider.ProviderPort()), delegate(TestClient.Builder builder) {
                 builder.SslEnabled(true);
             });
         }
@@ -105,10 +90,10 @@ namespace PixieTests
             ManualResetEvent dataReceivedEvent = new ManualResetEvent(false);
             DisconnectTestServer server = new DisconnectTestServer(delegate {
                 dataReceivedEvent.Set();
-            }, "localhost", port);
+            }, "127.0.0.1", port);
 
             server.StartAsync();
-            var client = TestClient.Builder.Create("localhost", port).Build();
+            var client = TestClient.Builder.Create("127.0.0.1", port).Build();
 
             client.Run();
             client.Stop();
