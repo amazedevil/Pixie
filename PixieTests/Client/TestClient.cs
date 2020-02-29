@@ -55,7 +55,7 @@ namespace PixieCoreTests.Client
 
         public TestClient(string host, int port, bool ssl, Type[] eventTypes, Action<object> onMessageRecived) {
             this.eventTypes = eventTypes;
-            this.host = host;
+            this.host = host != "0.0.0.0" ? host : "127.0.0.1";
             this.port = port;
             this.ssl = ssl;
             this.onMessageRecived = onMessageRecived;

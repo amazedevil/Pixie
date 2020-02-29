@@ -24,13 +24,9 @@ namespace PixieTests
     {
         //Simple server test
 
-        private class SimpleTestServer : ServerTester.TestServer {
-            internal SimpleTestServer(string address, int port) : base(address, port) {}
-        }
-
         [Test]
         public void ClientToServerMessagePassingTest() {
-            ServerTester.PlayCommonServerTest(new SimpleTestServer("127.0.0.1", PortProvider.ProviderPort()));
+            ServerTester.PlayCommonServerTest(new ServerTester.TestServer("0.0.0.0", PortProvider.ProviderPort()));
         }
 
         //SSL test
