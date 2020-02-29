@@ -14,10 +14,6 @@ public static class PXContainerExtensions
         return resolver.Resolve<PXMiddlewareService>();
     }
 
-    public static IPXEnvironmentService Env(this IResolver resolver) {
-        return resolver.Resolve<IPXEnvironmentService>();
-    }
-
     public static IPXClientService Client(this IResolver resolver) {
         return resolver.Resolve<IPXClientService>();
     }

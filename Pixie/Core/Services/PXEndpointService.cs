@@ -35,7 +35,7 @@ namespace Pixie.Core.Services
         {
             internal string PipeName { get; private set; }
 
-            public CliServer(string pipeName) {
+            public CliServer(string pipeName = PXCliConsts.PX_CLI_PIPE_NAME_DEFAULT) {
                 this.PipeName = pipeName;
             }
         }

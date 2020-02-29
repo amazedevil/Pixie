@@ -22,7 +22,7 @@ namespace Pixie.Core.Services
 
         internal PXLoggerService(IContainer container) {
             this.writer = container.Resolve<IPXLogWriterService>(IfUnresolved.ReturnDefault);
-            this.Level = (LogLevel)container.Env().GetInt(PXEnvironmentService.ENV_PARAM_LOG_LEVEL, (int)LogLevel.Default);
+            this.Level = LogLevel.Default;
         }
 
         public void Exception(Exception e) {
