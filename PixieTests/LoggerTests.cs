@@ -13,12 +13,8 @@ namespace PixieTests
         public void LogLevelTest() {
             Container container = new Container();
             var logWriterMock = new Mock<IPXLogWriterService>();
-            var envMock = new Mock<IPXEnvironmentService>();
-
-            envMock.Setup(e => e.GetInt(It.IsAny<string>(), It.IsAny<Func<int>>())).Returns(0);
 
             container.Use(logWriterMock.Object);
-            container.Use(envMock.Object);
 
             PXLoggerService logger = new PXLoggerService(container);
 

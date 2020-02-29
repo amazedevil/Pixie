@@ -11,7 +11,7 @@ namespace Pixie.Core
     public class PXServer
     {
         private Container container;
-        private Task endpointsProcessingTask = null;
+        private volatile Task endpointsProcessingTask = null;
 
         protected virtual IPXServiceProvider[] GetServiceProviders() {
             return new IPXServiceProvider[] { };
@@ -75,7 +75,6 @@ namespace Pixie.Core
             container.Register<PXMiddlewareService>(Reuse.Singleton);
             container.Register<IPXStreamWrapperService, PXStreamWrapperService>(Reuse.Singleton);
             container.Register<PXErrorHandlingService>();
-            container.RegisterDelegate<IPXEnvironmentService>(r => new PXEnvironmentService());
             container.RegisterDelegate(r => new PXLoggerService(r.Resolve<IContainer>()));
             container.RegisterDelegate<IPXMessageHandlerService>(_ => new PXMessageHandlerService(), Reuse.Singleton);
 
