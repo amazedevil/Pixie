@@ -1,10 +1,11 @@
 ﻿using DryIoc;
 using NUnit.Framework;
+using Pixie.Core.Messages;
 using Pixie.Core.Middlewares;
 using Pixie.Core.Services;
+using PixieTests.Common;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace PixieTests
 {
@@ -15,36 +16,44 @@ namespace PixieTests
             public int number;
 
             public void Handle(IResolverContext context, Action<IResolverContext> next) {
+                var list = context.Resolve<List<int>>();
                 context.Resolve<List<int>>().Add(number);
 
                 next(context);
             }
         }
 
+        class MessageHandler : PXMessageHandlerBase<TestMessages.TestMessageType1>
+        {
+        }
+
+        private class MiddlewareTestServer : ServerTester.TestServer
+        {
+            public List<int> result = new List<int>();
+
+            internal MiddlewareTestServer(string address, int port) : base(address, port) { }
+
+            public override void OnRegister(IContainer container) {
+                base.OnRegister(container);
+
+                container.Use(result);
+
+                container.Handlers().Register(
+                    PXHandlerMappingService.MessageHandlerItem.CreateWithMessageHandlerType<MessageHandler>()
+                        .Middleware(new Middleware() { number = 3 })
+                        .Middleware(new Middleware() { number = 2 })
+                        .Middleware(new Middleware() { number = 1 })
+                );
+            }
+        }
+
         [Test]
         public void MiddlewaresExecutionOrderTest() {
-            var service = new PXMiddlewareService();
+            var server = new MiddlewareTestServer("0.0.0.0", PortProvider.ProviderPort());
 
-            List<int> result = new List<int>();
+            ServerTester.PlayCommonServerTest(server);
 
-            Container container = new Container();
-
-            container.Use(result);
-
-            foreach (var middleware in new IPXMiddleware[] {
-                new Middleware() { number = 3 },
-                new Middleware() { number = 2 },
-                new Middleware() { number = 1 },
-            }) {
-                service.AddMiddleware(middleware, PXMiddlewareService.Scope.Universal);
-            }
-
-            service.HandleOverMiddlewares(delegate (IResolverContext context) {
-                Assert.AreEqual(
-                    new int[] { 3, 2, 1 },
-                    context.Resolve<List<int>>()
-                );
-            }, container, PXMiddlewareService.Scope.Universal);
+            Assert.AreEqual(new int[] { 3, 2, 1 }, server.result);
         }
     }
 }
