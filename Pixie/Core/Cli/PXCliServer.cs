@@ -1,6 +1,5 @@
 ﻿using DryIoc;
 using Pixie.Core.Services;
-using Pixie.Core.Services.Internal;
 using System;
 using System.IO.Pipes;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -57,17 +56,12 @@ namespace Pixie.Core.Cli
                         await pipe.WaitForConnectionAsync(this.cancellationTokenSource.Token);
 
                         PXCliCommand command = (PXCliCommand)formatter.Deserialize(pipe);
-
-                        string output = "";
-
+                        
                         ExecuteInCliScope(delegate (IResolverContext context) {
-                            this.container.Middlewares().HandleOverMiddlewares(delegate (IResolverContext ctx) {
-                                command.Execute(ctx);
-                                output = command.FlushOutput();
-                            }, context, Services.PXMiddlewareService.Scope.Cli);
+                            this.container.Handlers().HandleCliCommand(command, context);
                         });
 
-                        formatter.Serialize(pipe, output);
+                        formatter.Serialize(pipe, command.FlushOutput());
                     }
                 } catch (OperationCanceledException) {
                     break;

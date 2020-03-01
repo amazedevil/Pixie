@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Pixie.Core.Exceptions
 {
-    class PXRegistrationOutOfTime : Exception
+    public class PXRegistrationOutOfTime : Exception
     {
         internal PXRegistrationOutOfTime() : base("Trying to register some resource out of registration phase") { }
     }

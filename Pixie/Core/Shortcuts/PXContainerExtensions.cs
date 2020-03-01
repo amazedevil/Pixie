@@ -10,10 +10,6 @@ public static class PXContainerExtensions
         return resolver.Resolve<PXLoggerService>();
     }
 
-    public static PXMiddlewareService Middlewares(this IResolver resolver) {
-        return resolver.Resolve<PXMiddlewareService>();
-    }
-
     public static IPXClientService Client(this IResolver resolver) {
         return resolver.Resolve<IPXClientService>();
     }
@@ -30,12 +26,12 @@ public static class PXContainerExtensions
         return resolver.Resolve<PXSenderDispatcherService>();
     }
 
-    public static IPXMessageHandlerService Handlers(this IResolver resolver) {
-        return resolver.Resolve<IPXMessageHandlerService>();
-    }
-
     public static PXEndpointService Endpoints(this IResolver resolver) {
         return resolver.Resolve<PXEndpointService>();
+    }
+
+    public static PXHandlerMappingService Handlers(this IResolver resolver) {
+        return resolver.Resolve<PXHandlerMappingService>();
     }
 
     //internal

@@ -12,8 +12,9 @@ namespace Pixie.Core.Messages
         protected object data;
         protected IResolverContext context;
 
-        public virtual void SetupData(object data) {
+        internal PXMessageHandlerRaw SetupData(object data) {
             this.data = data;
+            return this;
         }
 
         public void Handle(IResolverContext context) {

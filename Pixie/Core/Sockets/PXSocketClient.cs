@@ -1,7 +1,6 @@
 ﻿using DryIoc;
 using Pixie.Core.Messages;
 using Pixie.Core.Services;
-using Pixie.Core.Services.Internal;
 using Pixie.Core.StreamWrappers;
 using System;
 using System.Collections.Generic;
@@ -23,8 +22,6 @@ namespace Pixie.Core
         private IResolverContext context;
         private HashSet<int> subscriptions = new HashSet<int>();
 
-        private IPXMessageHandlerService messageHandlerService;
-
         public event Action<PXSocketClient> OnDisconnect;
 
         public bool IsClosed { get; private set; }
@@ -34,9 +31,7 @@ namespace Pixie.Core
             client = tcpClient;
             stream = WrapStream(client.GetStream(), wrappers);
 
-            messageHandlerService = context.Handlers();
-
-            StreamReader = new PXMessageReader(stream, messageHandlerService.GetMessageTypes());
+            StreamReader = new PXMessageReader(stream, context.Handlers().GetHandlableMessageTypes());
             StreamWriter = new PXMessageWriter(stream);
 
             this.context = context;
@@ -76,10 +71,9 @@ namespace Pixie.Core
             try {
                 if (StreamReader.HasMessages) {
                     this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
-                        this.context.Middlewares().HandleOverMiddlewares(
-                            delegate (IResolverContext ctx) { CreateMessageHandler(StreamReader.DequeueMessage()).Handle(ctx); },
-                            messageContext,
-                            PXMiddlewareService.Scope.Message
+                        this.context.Handlers().HandleMessage(
+                            StreamReader.DequeueMessage(),
+                            messageContext
                         );
                     });
                 }
@@ -99,17 +93,12 @@ namespace Pixie.Core
         }
 
         public void ProcessClosingMessage() {
-            var handler = this.context.Handlers().InstantiateForClientDisconnect();
-
-            if (handler != null) {
-                this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
-                    this.context.Middlewares().HandleOverMiddlewares(
-                        delegate (IResolverContext ctx) { handler.Handle(ctx); },
-                        messageContext,
-                        PXMiddlewareService.Scope.Message
-                    );
-                });
-            }
+            this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
+                this.context.Handlers().HandleSpecialMessage(
+                    PXHandlerMappingService.SpecificMessageHandlerType.ClientDisconnect,
+                    messageContext
+                );
+            });
         }
 
         protected internal void Close() {
@@ -120,12 +109,6 @@ namespace Pixie.Core
 
             OnDisconnect?.Invoke(this);
             OnDisconnect = null;
-        }
-
-        private PXMessageHandlerRaw CreateMessageHandler(object message) {
-            var handler = messageHandlerService.Instantiate(message.GetType());
-            handler.SetupData(message);
-            return handler;
         }
 
         private void ExecuteInMessageScope(Action<IResolverContext> action) {

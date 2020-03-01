@@ -1,5 +1,4 @@
-﻿using Pixie.Core.Services.Internal;
-using System;
+﻿using System;
 using System.IO.Pipes;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;

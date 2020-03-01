@@ -1,7 +1,6 @@
 ﻿using DryIoc;
 using Pixie.Core.Cli;
 using Pixie.Core.ServiceProviders;
-using Pixie.Core.Services.Internal;
 using Pixie.Core.Services;
 using System;
 using System.Threading.Tasks;
@@ -55,13 +54,8 @@ namespace Pixie.Core
         }
 
         private void CloseRegistrations() {
-            if (this.container.Handlers() is PXMessageHandlerService messageHandlerService) {
-                messageHandlerService.CloseRegistration();
-            }
-
-            if (this.container.Endpoints() is PXEndpointService endpointService) {
-                endpointService.CloseRegistration();
-            }
+            this.container.Handlers().CloseRegistration();
+            this.container.Endpoints().CloseRegistration();
         }
 
         private Container CreateContainer() {
@@ -72,10 +66,9 @@ namespace Pixie.Core
             container.RegisterDelegate(r => new PXSchedulerService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.RegisterDelegate(r => new PXEndpointService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.RegisterDelegate(r => new PXSenderDispatcherService(), Reuse.Singleton);
-            container.Register<PXMiddlewareService>(Reuse.Singleton);
             container.Register<PXErrorHandlingService>();
             container.RegisterDelegate(r => new PXLoggerService(r.Resolve<IContainer>()));
-            container.RegisterDelegate<IPXMessageHandlerService>(_ => new PXMessageHandlerService(), Reuse.Singleton);
+            container.RegisterDelegate(_ => new PXHandlerMappingService(), Reuse.Singleton);
 
             return container;
         }
