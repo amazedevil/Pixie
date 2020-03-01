@@ -5,7 +5,6 @@ using Pixie.Core;
 using Pixie.Core.Messages;
 using Pixie.Core.ServiceProviders;
 using Pixie.Core.Services;
-using Pixie.Core.Services.Internal;
 using Pixie.Core.StreamWrappers;
 using Pixie.Toolbox.StreamWrappers;
 using PixieCoreTests.Client;
@@ -44,7 +43,7 @@ namespace PixieTests
 
         [Test]
         public void SslServerMessagePassingTest() {
-            ServerTester.PlayCommonServerTest(new SslTestServer("127.0.0.1", PortProvider.ProviderPort()), delegate(TestClient.Builder builder) {
+            ServerTester.PlayCommonServerTest(new SslTestServer("0.0.0.0", PortProvider.ProviderPort()), delegate(TestClient.Builder builder) {
                 builder.SslEnabled(true);
             });
         }
@@ -72,10 +71,10 @@ namespace PixieTests
                 this.handler = new ActionExecutorMessageHandler(disconnectAction);
             }
 
-            public override void OnInitialize(IContainer container) {
-                base.OnInitialize(container);
+            public override void OnRegister(IContainer container) {
+                base.OnRegister(container);
 
-                container.Handlers().RegisterProviderForClientDisconnect(delegate { return handler; });
+                container.Handlers().Register(PXHandlerMappingService.SpecialMessageHandlerItem.ClientDisconnectMessageHandlerProvider(delegate { return handler; }));
             }
         }
 
@@ -86,7 +85,7 @@ namespace PixieTests
             ManualResetEvent dataReceivedEvent = new ManualResetEvent(false);
             DisconnectTestServer server = new DisconnectTestServer(delegate {
                 dataReceivedEvent.Set();
-            }, "127.0.0.1", port);
+            }, "0.0.0.0", port);
 
             server.StartAsync();
             var client = TestClient.Builder.Create("127.0.0.1", port).Build();

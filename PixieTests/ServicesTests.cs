@@ -16,7 +16,6 @@ namespace PixieTests
 
             public void OnInitialize(IContainer container) {
                 Assert.IsNotNull(container.Logger());
-                Assert.IsNotNull(container.Middlewares());
                 Assert.IsNotNull(container.Client());
                 Assert.IsNotNull(container.Scheduler());
                 Assert.IsNotNull(container.Sender());
