@@ -2,6 +2,7 @@
 using Pixie.Core.Cli;
 using Pixie.Core.Exceptions;
 using Pixie.Core.Sockets;
+using Pixie.Core.StreamWrappers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,10 +25,23 @@ namespace Pixie.Core.Services
             internal int Port { get; private set; }
             internal int SenderId { get; private set; }
 
-            public SocketServer(string address, int port, int senderId = PXSenderDispatcherService.DEFAULT_SENDER_ID) {
+            internal List<IPXStreamWrapper> StreamWrappers { get; private set; }
+
+            public SocketServer(string address, int port) {
                 this.Address = address;
                 this.Port = port;
-                this.SenderId = senderId;
+                this.SenderId = PXSenderDispatcherService.DEFAULT_SENDER_ID;
+                this.StreamWrappers = new List<IPXStreamWrapper>();
+            }
+
+            public SocketServer Sender(int id) {
+                this.SenderId = id;
+                return this;
+            }
+
+            public SocketServer StreamWrapper(IPXStreamWrapper wrapper) {
+                this.StreamWrappers.Add(wrapper);
+                return this;
             }
         }
 
@@ -35,7 +49,7 @@ namespace Pixie.Core.Services
         {
             internal string PipeName { get; private set; }
 
-            public CliServer(string pipeName = PXCliConsts.PX_CLI_PIPE_NAME_DEFAULT) {
+            public CliServer(string pipeName) {
                 this.PipeName = pipeName;
             }
         }
@@ -55,20 +69,22 @@ namespace Pixie.Core.Services
             this.container = container;
         }
 
-        public void RegisterSockerServer(string address, int port) {
-            AddDescription(new SocketServer(address, port));
+        public SocketServer RegisterSockerServer(string address, int port) {
+            return AddDescription(new SocketServer(address, port)) as SocketServer;
         }
 
-        public void RegisterCliServer(string pipeName = "default") {
-            AddDescription(new CliServer(pipeName));
+        public CliServer RegisterCliServer(string pipeName = PXCliConsts.PX_CLI_PIPE_NAME_DEFAULT) {
+            return AddDescription(new CliServer(pipeName)) as CliServer;
         }
 
-        private void AddDescription(EndpointDescription desc) {
+        private EndpointDescription AddDescription(EndpointDescription desc) {
             if (!registrationsAllowed) {
                 throw new PXRegistrationOutOfTime();
             }
 
             descriptions.Add(desc);
+
+            return desc;
         }
 
         public void BuildEndpoints() {
@@ -78,9 +94,18 @@ namespace Pixie.Core.Services
         private IEndpoint BuildEndpoint(EndpointDescription description) {
             switch (description) {
                 case SocketServer sockServ:
-                    return new PXSocketServer(sockServ.Address, sockServ.Port, this.container, sockServ.SenderId);
+                    return new PXSocketServer(
+                        sockServ.Address, 
+                        sockServ.Port,
+                        this.container,
+                        sockServ.SenderId, 
+                        sockServ.StreamWrappers
+                    );
                 case CliServer cliServ:
-                    return new PXCliServer(cliServ.PipeName, this.container);
+                    return new PXCliServer(
+                        cliServ.PipeName,
+                        this.container
+                    );
             }
 
             return null;

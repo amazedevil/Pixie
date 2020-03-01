@@ -34,10 +34,6 @@ public static class PXContainerExtensions
         return resolver.Resolve<IPXMessageHandlerService>();
     }
 
-    public static IPXStreamWrapperService StreamWrappers(this IResolver resolver) {
-        return resolver.Resolve<IPXStreamWrapperService>();
-    }
-
     public static PXEndpointService Endpoints(this IResolver resolver) {
         return resolver.Resolve<PXEndpointService>();
     }

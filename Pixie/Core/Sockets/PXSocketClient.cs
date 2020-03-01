@@ -2,6 +2,7 @@
 using Pixie.Core.Messages;
 using Pixie.Core.Services;
 using Pixie.Core.Services.Internal;
+using Pixie.Core.StreamWrappers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,10 +29,10 @@ namespace Pixie.Core
 
         public bool IsClosed { get; private set; }
 
-        public PXSocketClient(TcpClient tcpClient, IResolverContext context) {
+        public PXSocketClient(TcpClient tcpClient, IResolverContext context, IEnumerable<IPXStreamWrapper> wrappers) {
             Id = Guid.NewGuid().ToString();
             client = tcpClient;
-            stream = context.StreamWrappers().WrapStream(client.GetStream());
+            stream = WrapStream(client.GetStream(), wrappers);
 
             messageHandlerService = context.Handlers();
 
@@ -55,6 +56,16 @@ namespace Pixie.Core
             StreamReader.OnStreamError += delegate (PXMessageReader r, Exception e) {
                 OnClientError(e);
             };
+        }
+
+        private Stream WrapStream(Stream stream, IEnumerable<IPXStreamWrapper> wrappers) {
+            var result = stream;
+
+            foreach (var wrapper in wrappers) {
+                result = wrapper.Wrap(result);
+            }
+
+            return result;
         }
 
         public void Start() {

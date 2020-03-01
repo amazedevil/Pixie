@@ -1,5 +1,6 @@
 ﻿using DryIoc;
 using Pixie.Core.Services;
+using Pixie.Core.StreamWrappers;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace Pixie.Core.Sockets
     {
         private TcpListener listener;
         private IContainer container;
+        private IEnumerable<IPXStreamWrapper> wrappers;
 
         private IPAddress address;
         private int port;
@@ -21,12 +23,13 @@ namespace Pixie.Core.Sockets
 
         private IDictionary<string, PXSocketClient> clients = new ConcurrentDictionary<string, PXSocketClient>();
 
-        public PXSocketServer(string address, int port, IContainer container, int senderId) {
+        public PXSocketServer(string address, int port, IContainer container, int senderId, IEnumerable<IPXStreamWrapper> wrappers) {
             this.address = IPAddress.Parse(address);
             this.port = port;
             this.listener = new TcpListener(this.address, this.port);
             this.senderId = senderId;
             this.container = container;
+            this.wrappers = wrappers;
         }
 
         async public Task Start() {
@@ -41,7 +44,8 @@ namespace Pixie.Core.Sockets
                     while (true) {
                         PXSocketClient client = new PXSocketClient(
                             await this.listener.AcceptTcpClientAsync(),
-                            socketServerContext
+                            socketServerContext,
+                            this.wrappers
                         );
 
                         clients[client.Id] = client;
