@@ -35,10 +35,10 @@ namespace PixieTests
         {
             internal SslTestServer(string address, int port) : base(address, port) { }
 
-            public override void OnInitialize(IContainer container) {
-                base.OnInitialize(container);
+            protected override void HandlerServerDescription(PXEndpointService.SocketServer server) {
+                base.HandlerServerDescription(server);
 
-                container.StreamWrappers().AddWrapper(new PXSSLStreamWrapper("Resources/certificate.p12"));
+                server.StreamWrapper(new PXSSLStreamWrapper("Resources/certificate.p12"));
             }
         }
 
