@@ -38,15 +38,20 @@ Service providers, are classes that should fill our system with logic, in our ca
 ```csharp
 class MyServiceProvider : IPXServiceProvider
 {
-    //first, every service provider method OnBoot called
-    public void OnBoot(IContainer container) {
-        //we'll write MessageHandlerSaySomething class next
-        container.Handlers().RegisterHandlerType<MessageHandlerSaySomething>();
+    //OnRegister of every service provider is called in the very beginning
+    public void OnRegister(IContainer container) {
+        //we want socket server to run on port 7777
+        container.Endpoints().RegisterSockerServer("0.0.0.0", 7777)
+    
+        //we'll write MessageHandlerSaySomething class later
+        container.Handlers().Register(
+            PXHandlerService.MessageHandlerItem.CreateWithMessageHandlerType<MessageHandlerSaySomething>()
+        );
     }
 
-    //after all OnBoot methods of all providers called, OnPostBoot method of every SP called,
-    //so here we may be sure that every service is registered and we can get the one we need
-    public void OnPostBoot(IContainer container) {}
+    //after every provider OnRegister method executed, OnInitialize method of every SP should be called,
+    //so we can be sure that in OnInitialize every service is registered already
+    public void OnInitialize(IContainer container) {}
 }
 ```
 
@@ -71,18 +76,6 @@ class MessageHandlerSaySomething : PXMessageHandlerBase<ServerMessageSaySomethin
 }
 ```
 
-Before we start server, we should set environment parameters. Pixie read ones from file ".env" placed next to main executable, it's content (JSON) looks like this:
-
-```json
-{
-    "PX_HOST": "localhost",
-    "PX_PORT": 7777
-}
-```
-
-- PX_HOST - hostname or ip of our server
-- PX_PORT - port our server is listening to
-
 At last, we can start our server, e.g. from Main:
 
 ```csharp
@@ -90,7 +83,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        (new RTHSServer()).StartSync();
+        (new MyServer()).StartSync();
     }
 }
 ```
