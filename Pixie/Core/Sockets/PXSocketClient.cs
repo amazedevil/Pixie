@@ -96,7 +96,7 @@ namespace Pixie.Core
 
         public void ProcessClosingMessage() {
             this.context.Handlers().HandleSpecialMessage(
-                PXHandlerMappingService.SpecificMessageHandlerType.ClientDisconnect,
+                PXHandlerService.SpecificMessageHandlerType.ClientDisconnect,
                 delegate(Action<IResolverContext> handler) {
                     this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
                         handler(messageContext);

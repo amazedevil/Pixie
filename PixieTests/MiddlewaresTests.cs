@@ -36,7 +36,7 @@ namespace PixieTests
                 container.Use(result);
 
                 container.Handlers().Register(
-                    PXHandlerMappingService.MessageHandlerItem.CreateWithMessageHandlerType<MessageHandler>()
+                    PXHandlerService.MessageHandlerItem.CreateWithMessageHandlerType<MessageHandler>()
                         .Middleware(new Middleware() { number = 3 })
                         .Middleware(new Middleware() { number = 2 })
                         .Middleware(new Middleware() { number = 1 })

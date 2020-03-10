@@ -30,8 +30,8 @@ public static class PXContainerExtensions
         return resolver.Resolve<PXEndpointService>();
     }
 
-    public static PXHandlerMappingService Handlers(this IResolver resolver) {
-        return resolver.Resolve<PXHandlerMappingService>();
+    public static PXHandlerService Handlers(this IResolver resolver) {
+        return resolver.Resolve<PXHandlerService>();
     }
 
     //internal

@@ -74,7 +74,7 @@ namespace PixieTests
             public override void OnRegister(IContainer container) {
                 base.OnRegister(container);
 
-                container.Handlers().Register(PXHandlerMappingService.SpecialMessageHandlerItem.ClientDisconnectMessageHandlerProvider(delegate { return handler; }));
+                container.Handlers().Register(PXHandlerService.SpecialMessageHandlerItem.ClientDisconnectMessageHandlerProvider(delegate { return handler; }));
             }
         }
 

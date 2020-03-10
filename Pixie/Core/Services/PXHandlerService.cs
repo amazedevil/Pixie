@@ -8,11 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace Pixie.Core.Services
 {
-    public class PXHandlerMappingService
+    public class PXHandlerService
     {
         public enum SpecificMessageHandlerType
         {
@@ -70,7 +69,7 @@ namespace Pixie.Core.Services
             }
 
             public Group CliCommandFallback() {
-                Items.Add(PXHandlerMappingService.CliCommand.Fallback());
+                Items.Add(PXHandlerService.CliCommand.Fallback());
                 return this;
             }
 
@@ -80,7 +79,7 @@ namespace Pixie.Core.Services
             }
 
             public Group FallbackJob() {
-                Items.Add(PXHandlerMappingService.Job.Fallback());
+                Items.Add(PXHandlerService.Job.Fallback());
                 return this;
             }
 
