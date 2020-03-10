@@ -16,7 +16,6 @@ namespace PixieTests
             public int number;
 
             public void Handle(IResolverContext context, Action<IResolverContext> next) {
-                var list = context.Resolve<List<int>>();
                 context.Resolve<List<int>>().Add(number);
 
                 next(context);
@@ -34,8 +33,6 @@ namespace PixieTests
             internal MiddlewareTestServer(string address, int port) : base(address, port) { }
 
             public override void OnRegister(IContainer container) {
-                base.OnRegister(container);
-
                 container.Use(result);
 
                 container.Handlers().Register(
@@ -44,6 +41,11 @@ namespace PixieTests
                         .Middleware(new Middleware() { number = 2 })
                         .Middleware(new Middleware() { number = 1 })
                 );
+
+                //moved registration to bottom,
+                //so signal message will be received
+                //after middlewares firing
+                base.OnRegister(container);
             }
         }
 
@@ -53,7 +55,7 @@ namespace PixieTests
 
             ServerTester.PlayCommonServerTest(server);
 
-            Assert.AreEqual(new int[] { 3, 2, 1 }, server.result);
+            Assert.AreEqual(new int[] { 3, 2, 1 }, server.result.ToArray());
         }
     }
 }
