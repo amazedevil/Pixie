@@ -1,4 +1,6 @@
 ﻿using DryIoc;
+using Pixie.Core.Exceptions;
+using Pixie.Core.Tasks;
 using Quartz;
 using Quartz.Impl;
 using System;
@@ -44,7 +46,7 @@ namespace Pixie.Core.Services
         }
 
         public void Schedule(IJobDetail job, TimeSpan delay) {
-            scheduler.ScheduleJob(
+            ScheduleInternal(
                 job,
                 TriggerBuilder.Create()
                     .StartAt(DateTime.Now + delay)
@@ -53,7 +55,7 @@ namespace Pixie.Core.Services
         }
 
         public void ScheduleCrontab(IJobDetail job, string cronString) {
-            scheduler.ScheduleJob(
+            ScheduleInternal(
                 job,
                 TriggerBuilder.Create()
                     .StartNow()
@@ -64,6 +66,14 @@ namespace Pixie.Core.Services
 
         public bool DeleteJob(JobKey key) {
             return scheduler.DeleteJob(key).GetAwaiter().GetResult();
+        }
+
+        private void ScheduleInternal(IJobDetail job, ITrigger trigger) {
+            if (!job.JobType.IsInstanceOfType(typeof(PXJobBase))) {
+                throw new PXJobBaseTypeInvalid(job.JobType);
+            }
+
+            scheduler.ScheduleJob(job, trigger);
         }
     }
 }
