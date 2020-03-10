@@ -182,8 +182,9 @@ namespace Pixie.Core.Services
             public List<IPXMiddleware> middlewares;
         }
 
-        private IDictionary<Type, MessageHandlerWrapper> messages = new Dictionary<Type, MessageHandlerWrapper>();
-        private IDictionary<SpecificMessageHandlerType, SpecificMessageHandlerWrapper> specificMessages = new Dictionary<SpecificMessageHandlerType, SpecificMessageHandlerWrapper>();
+        private IDictionary<Type, List<MessageHandlerWrapper>> messages = new Dictionary<Type, List<MessageHandlerWrapper>>();
+        private IDictionary<SpecificMessageHandlerType, List<SpecificMessageHandlerWrapper>> specificMessages 
+            = new Dictionary<SpecificMessageHandlerType, List<SpecificMessageHandlerWrapper>> ();
         private IDictionary<Type, CommonHandlerWrapper> cliCommands = new Dictionary<Type, CommonHandlerWrapper>();
         private IDictionary<Type, CommonHandlerWrapper> jobs = new Dictionary<Type, CommonHandlerWrapper>();
 
@@ -200,16 +201,24 @@ namespace Pixie.Core.Services
 
                 switch (mi) {
                     case MessageHandlerItem mh:
-                        messages[mh.MessageType] = new MessageHandlerWrapper() {
+                        if (!messages.ContainsKey(mh.MessageType)) {
+                            messages[mh.MessageType] = new List<MessageHandlerWrapper>();
+                        }
+
+                        messages[mh.MessageType].Add(new MessageHandlerWrapper() {
                             provider = mh.Provider,
                             middlewares = middlewares
-                        };
+                        });
                         break;
                     case SpecialMessageHandlerItem smh:
-                        specificMessages[smh.MessageType] = new SpecificMessageHandlerWrapper() {
+                        if (!specificMessages.ContainsKey(smh.MessageType)) {
+                            specificMessages[smh.MessageType] = new List<SpecificMessageHandlerWrapper>();
+                        }
+
+                        specificMessages[smh.MessageType].Add(new SpecificMessageHandlerWrapper() {
                             provider = smh.Provider,
                             middlewares = middlewares
-                        };
+                        });
                         break;
                     case CliCommand cli:
                         cliCommands[cli.Type] = new CommonHandlerWrapper() {
@@ -236,21 +245,25 @@ namespace Pixie.Core.Services
             return messages.Keys;
         }
 
-        internal void HandleMessage(object message, IResolverContext context) {
-            var data = messages[message.GetType()];
-
-            ApplyMiddlewares(data.middlewares, delegate (IResolverContext processedContext) {
-                data.provider().SetupData(message).Handle(processedContext);
-            }, context);
+        internal void HandleMessage(object message, Action<Action<IResolverContext>> contextProvider) {
+            foreach (var data in messages[message.GetType()]) {
+                contextProvider(delegate (IResolverContext context) {
+                    ApplyMiddlewares(data.middlewares, delegate (IResolverContext processedContext) {
+                        data.provider().SetupData(message).Handle(processedContext);
+                    }, context);
+                });
+            }
         }
 
-        internal void HandleSpecialMessage(SpecificMessageHandlerType type, IResolverContext context) {
+        internal void HandleSpecialMessage(SpecificMessageHandlerType type, Action<Action<IResolverContext>> contextProvider) {
             if (specificMessages.ContainsKey(type)) {
-                var data = specificMessages[type];
-
-                ApplyMiddlewares(data.middlewares, delegate (IResolverContext processedContext) {
-                    data.provider().Handle(processedContext);
-                }, context);
+                foreach (var data in specificMessages[type]) {
+                    contextProvider(delegate (IResolverContext context) {
+                        ApplyMiddlewares(data.middlewares, delegate (IResolverContext processedContext) {
+                            data.provider().Handle(processedContext);
+                        }, context);
+                    });
+                }
             }
         }
 

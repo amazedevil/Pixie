@@ -70,12 +70,14 @@ namespace Pixie.Core
         public void Process() {
             try {
                 if (StreamReader.HasMessages) {
-                    this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
-                        this.context.Handlers().HandleMessage(
-                            StreamReader.DequeueMessage(),
-                            messageContext
-                        );
-                    });
+                    this.context.Handlers().HandleMessage(
+                        StreamReader.DequeueMessage(),
+                        delegate(Action<IResolverContext> handler) {
+                            this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
+                                handler(messageContext);
+                            });
+                        }
+                    );
                 }
             } catch (Exception e) {
                 Close();
@@ -93,12 +95,14 @@ namespace Pixie.Core
         }
 
         public void ProcessClosingMessage() {
-            this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
-                this.context.Handlers().HandleSpecialMessage(
-                    PXHandlerMappingService.SpecificMessageHandlerType.ClientDisconnect,
-                    messageContext
-                );
-            });
+            this.context.Handlers().HandleSpecialMessage(
+                PXHandlerMappingService.SpecificMessageHandlerType.ClientDisconnect,
+                delegate(Action<IResolverContext> handler) {
+                    this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
+                        handler(messageContext);
+                    });
+                }
+            );
         }
 
         protected internal void Close() {
