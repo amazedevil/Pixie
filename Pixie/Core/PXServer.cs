@@ -67,7 +67,7 @@ namespace Pixie.Core
             container.RegisterDelegate(r => new PXEndpointService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.RegisterDelegate(r => new PXSenderDispatcherService(), Reuse.Singleton);
             container.Register<PXErrorHandlingService>();
-            container.RegisterDelegate(r => new PXLoggerService(r.Resolve<IContainer>()));
+            container.RegisterDelegate(r => new PXLoggerService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.RegisterDelegate(_ => new PXHandlerService(), Reuse.Singleton);
 
             return container;

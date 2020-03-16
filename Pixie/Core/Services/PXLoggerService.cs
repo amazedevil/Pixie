@@ -1,4 +1,5 @@
 ﻿using DryIoc;
+using Pixie.Core.Common.Concurrent;
 using System;
 
 namespace Pixie.Core.Services
@@ -16,6 +17,7 @@ namespace Pixie.Core.Services
         }
 
         private IPXLogWriterService writer;
+        private SerialActionQueue processingQueue = new SerialActionQueue();
 
         public LogLevel Level { set; get; }
 
@@ -30,7 +32,7 @@ namespace Pixie.Core.Services
 
         public void Exception(Func<Exception> ep) {
             if (Level.HasFlag(LogLevel.Error)) {
-                this.writer?.Exception(ep());
+                EnqueueOperation(w => w.Exception(ep()));
             }
         }
 
@@ -40,7 +42,7 @@ namespace Pixie.Core.Services
 
         public void Error(Func<string> sp) {
             if (Level.HasFlag(LogLevel.Error)) {
-                this.writer?.Error(sp());
+                EnqueueOperation(w => w.Error(sp()));
             }
         }
 
@@ -50,7 +52,7 @@ namespace Pixie.Core.Services
 
         public void Info(Func<string> sp) {
             if (Level.HasFlag(LogLevel.Info)) {
-                this.writer?.Info(sp());
+                EnqueueOperation(w => w.Info(sp()));
             }
         }
 
@@ -60,8 +62,22 @@ namespace Pixie.Core.Services
 
         public void Debug(Func<string> sp) {
             if (Level.HasFlag(LogLevel.Debug)) {
-                this.writer?.Debug(sp());
+                EnqueueOperation(w => w.Debug(sp()));
             }
+        }
+
+        internal void WaitForQueueToFinish() {
+
+        }
+
+        private void EnqueueOperation(Action<IPXLogWriterService> action) {
+            if (this.writer == null) {
+                return;
+            }
+
+            processingQueue.Enqueue(delegate {
+                action(this.writer);
+            });
         }
     }
 }
