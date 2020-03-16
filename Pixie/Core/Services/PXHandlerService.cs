@@ -3,7 +3,7 @@ using Pixie.Core.Cli;
 using Pixie.Core.Exceptions;
 using Pixie.Core.Messages;
 using Pixie.Core.Middlewares;
-using Pixie.Core.Tasks;
+using Pixie.Core.Jobs;
 using System;
 using System.Collections.Generic;
 using System.Linq;

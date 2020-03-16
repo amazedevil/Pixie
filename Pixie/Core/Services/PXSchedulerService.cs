@@ -1,6 +1,6 @@
 ﻿using DryIoc;
 using Pixie.Core.Exceptions;
-using Pixie.Core.Tasks;
+using Pixie.Core.Jobs;
 using Quartz;
 using Quartz.Impl;
 using System;

@@ -4,7 +4,7 @@ using Quartz;
 using System;
 using System.Threading.Tasks;
 
-namespace Pixie.Core.Tasks
+namespace Pixie.Core.Jobs
 {
     public class PXJobBase : IJob
     {
