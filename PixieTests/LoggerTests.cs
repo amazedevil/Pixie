@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Pixie.Core.Services;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace PixieTests
 {
@@ -36,6 +37,9 @@ namespace PixieTests
                 logger.Exception(exception);
                 logger.Info("info");
                 logger.Debug("debug");
+
+                //since logging is asynchronous, we may need time for writing to be done
+                Thread.Sleep(250);
 
                 logWriterMock.Verify(m => m.Error(It.Is<string>(s => s == "error")), c.Value[0] ? (Func<Times>)Times.Once : Times.Never);
                 logWriterMock.Verify(m => m.Exception(It.Is<Exception>(e => ReferenceEquals(e, exception))), c.Value[1] ? (Func<Times>)Times.Once : Times.Never);
