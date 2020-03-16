@@ -5,7 +5,8 @@ namespace Pixie.Core.Services
 {
     public class PXSenderDispatcherService
     {
-        public const int DEFAULT_SENDER_ID = 1;
+        public const int DEFAULT_SERVER_SENDER_ID = 1;
+        public const int DEFAULT_AGENT_SENDER_ID = 2;
 
         private IDictionary<int, IPXMessageSenderService> senders = new ConcurrentDictionary<int, IPXMessageSenderService>();
 
@@ -24,7 +25,11 @@ namespace Pixie.Core.Services
         }
 
         public IPXMessageSenderService GetDefaultSender() {
-            return GetSender(DEFAULT_SENDER_ID);
+            return GetSender(DEFAULT_SERVER_SENDER_ID);
+        }
+
+        public IPXMessageSenderService GetDefaultAgentSender() {
+            return GetSender(DEFAULT_AGENT_SENDER_ID);
         }
     }
 }

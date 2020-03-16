@@ -22,12 +22,20 @@ public static class PXContainerExtensions
         return resolver.SenderDispatcher().GetDefaultSender();
     }
 
+    public static IPXMessageSenderService AgentSender(this IResolver resolver) {
+        return resolver.SenderDispatcher().GetDefaultAgentSender();
+    }
+
     public static PXSenderDispatcherService SenderDispatcher(this IResolver resolver) {
         return resolver.Resolve<PXSenderDispatcherService>();
     }
 
     public static PXEndpointService Endpoints(this IResolver resolver) {
         return resolver.Resolve<PXEndpointService>();
+    }
+
+    public static PXAgentService Agents(this IResolver resolver) {
+        return resolver.Resolve<PXAgentService>();
     }
 
     public static PXHandlerService Handlers(this IResolver resolver) {

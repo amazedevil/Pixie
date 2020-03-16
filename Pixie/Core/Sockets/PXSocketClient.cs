@@ -23,6 +23,7 @@ namespace Pixie.Core
         private HashSet<int> subscriptions = new HashSet<int>();
 
         public event Action<PXSocketClient> OnDisconnect;
+        public event Action<PXSocketClient> OnBreakConnection;
 
         public bool IsClosed { get; private set; }
 
@@ -67,6 +68,10 @@ namespace Pixie.Core
             StreamReader.StartReadingCycle();
         }
 
+        public void Stop() {
+            Close();
+        }
+
         public void Process() {
             try {
                 if (StreamReader.HasMessages) {
@@ -88,6 +93,8 @@ namespace Pixie.Core
 
         private void OnClientError(Exception e) {
             this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClient);
+
+            OnBreakConnection?.Invoke(this);
         }
 
         public bool IsSubscribed(int subscriptionId) {
@@ -111,6 +118,8 @@ namespace Pixie.Core
 
             IsClosed = true;
 
+            OnBreakConnection = null;
+
             OnDisconnect?.Invoke(this);
             OnDisconnect = null;
         }
@@ -127,11 +136,11 @@ namespace Pixie.Core
             this.context.Logger().Debug(delegate { return $"Message received: {rawMessage}"; });
         }
 
-        //IPXClientService
-
         public void Send(object message) {
             this.StreamWriter.Send(message);
         }
+
+        //IPXClientService
 
         public void Subscribe(int subscriptionId) {
             this.subscriptions.Add(subscriptionId);

@@ -9,7 +9,7 @@ namespace Pixie.Core
 {
     public class PXServer
     {
-        private Container container;
+        protected Container container;
         private volatile Task endpointsProcessingTask = null;
 
         protected virtual IPXServiceProvider[] GetServiceProviders() {
@@ -27,6 +27,7 @@ namespace Pixie.Core
         public void StartSync() {
             Start();
             WaitForEndpointsToStop();
+            Stop();
         }
 
         public void Start() {
@@ -43,10 +44,16 @@ namespace Pixie.Core
 
                 StartScheduler();
 
+                StartAgents();
+
                 StartEndpoints();
             } catch (Exception ex) {
                 this.container.Errors().Handle(ex, PXErrorHandlingService.Scope.PixieServer);
             }
+        }
+
+        public void Stop() {
+            this.container.Agents().StopAgents();
         }
 
         public void WaitForEndpointsToStop() {
@@ -56,6 +63,7 @@ namespace Pixie.Core
         private void CloseRegistrations() {
             this.container.Handlers().CloseRegistration();
             this.container.Endpoints().CloseRegistration();
+            this.container.Agents().CloseRegistration();
         }
 
         private Container CreateContainer() {
@@ -65,6 +73,7 @@ namespace Pixie.Core
 
             container.RegisterDelegate(r => new PXSchedulerService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.RegisterDelegate(r => new PXEndpointService(r.Resolve<IContainer>()), Reuse.Singleton);
+            container.RegisterDelegate(r => new PXAgentService(r.Resolve<IContainer>()), Reuse.Singleton);
             container.RegisterDelegate(r => new PXSenderDispatcherService(), Reuse.Singleton);
             container.Register<PXErrorHandlingService>();
             container.RegisterDelegate(r => new PXLoggerService(r.Resolve<IContainer>()), Reuse.Singleton);
@@ -77,6 +86,10 @@ namespace Pixie.Core
             this.container.Logger().Info("Starting scheduler");
 
             container.Resolve<PXSchedulerService>().Launch();
+        }
+
+        private void StartAgents() {
+            this.container.Agents().BuildAndStartAgents();
         }
 
         private async void StartEndpoints() {

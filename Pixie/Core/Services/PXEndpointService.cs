@@ -30,7 +30,7 @@ namespace Pixie.Core.Services
             public SocketServer(string address, int port) {
                 this.Address = address;
                 this.Port = port;
-                this.SenderId = PXSenderDispatcherService.DEFAULT_SENDER_ID;
+                this.SenderId = PXSenderDispatcherService.DEFAULT_SERVER_SENDER_ID;
                 this.StreamWrappers = new List<IPXStreamWrapper>();
             }
 
