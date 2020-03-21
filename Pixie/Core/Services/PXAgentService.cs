@@ -1,7 +1,9 @@
 ﻿using DryIoc;
 using Pixie.Core.Agents;
 using Pixie.Core.Exceptions;
+using Pixie.Core.Sockets;
 using Pixie.Core.StreamWrappers;
+using Pixie.Toolbox.Protocols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,12 +23,14 @@ namespace Pixie.Core.Services
             internal int SenderId { get; private set; }
 
             internal List<IPXStreamWrapper> StreamWrappers { get; private set; }
+            internal Func<IPXProtocol> ProtocolProvider { get; private set; }
 
             public Agent(string address, int port) {
                 this.Address = address;
                 this.Port = port;
                 this.SenderId = PXSenderDispatcherService.DEFAULT_AGENT_SENDER_ID;
                 this.StreamWrappers = new List<IPXStreamWrapper>();
+                this.ProtocolProvider = delegate { return new PXReliableDeliveryProtocol(true); };
             }
 
             public Agent Sender(int id) {
@@ -36,6 +40,11 @@ namespace Pixie.Core.Services
 
             public Agent StreamWrapper(IPXStreamWrapper wrapper) {
                 this.StreamWrappers.Add(wrapper);
+                return this;
+            }
+
+            public Agent Protocol(Func<IPXProtocol> provider) {
+                this.ProtocolProvider = provider;
                 return this;
             }
         }
@@ -81,6 +90,7 @@ namespace Pixie.Core.Services
                 description.Port,
                 this.container,
                 description.StreamWrappers,
+                description.ProtocolProvider(),
                 description.SenderId
             ));
         }

@@ -1,5 +1,6 @@
 ﻿using DryIoc;
 using Pixie.Core.Services;
+using Pixie.Core.Sockets;
 using Pixie.Core.StreamWrappers;
 using System;
 using System.Collections.Generic;
@@ -12,24 +13,16 @@ namespace Pixie.Core.Agents
     {
         private PXSocketClient client;
 
-        public PXAgent(string address, int port, IResolverContext context, IEnumerable<IPXStreamWrapper> wrappers, int senderId) {
+        public PXAgent(string address, int port, IResolverContext context, IEnumerable<IPXStreamWrapper> wrappers, IPXProtocol protocol, int senderId) {
             this.SenderId = senderId;
-            
-            void SetupClient() {
-                this.client = new PXSocketClient(
-                    new TcpClient(address, port),
-                    context,
-                    wrappers
-                );
-            }
 
-            SetupClient();
-
-            this.client.OnBreakConnection += delegate (PXSocketClient client) {
-                SetupClient();
-            };
+            this.client = new PXSocketClient(null, context, wrappers, protocol, delegate {
+                return new TcpClient(address, port);
+            });
 
             context.SenderDispatcher().Register(this);
+
+            this.client.Start();
         }
 
         public void Stop() {

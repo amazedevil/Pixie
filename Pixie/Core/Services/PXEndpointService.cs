@@ -3,6 +3,8 @@ using Pixie.Core.Cli;
 using Pixie.Core.Exceptions;
 using Pixie.Core.Sockets;
 using Pixie.Core.StreamWrappers;
+using Pixie.Toolbox.Protocols;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,12 +28,14 @@ namespace Pixie.Core.Services
             internal int SenderId { get; private set; }
 
             internal List<IPXStreamWrapper> StreamWrappers { get; private set; }
+            internal Func<IPXProtocol> ProtocolProvider { get; private set; }
 
             public SocketServer(string address, int port) {
                 this.Address = address;
                 this.Port = port;
                 this.SenderId = PXSenderDispatcherService.DEFAULT_SERVER_SENDER_ID;
                 this.StreamWrappers = new List<IPXStreamWrapper>();
+                this.ProtocolProvider = delegate { return new PXReliableDeliveryProtocol(); };
             }
 
             public SocketServer Sender(int id) {
@@ -41,6 +45,11 @@ namespace Pixie.Core.Services
 
             public SocketServer StreamWrapper(IPXStreamWrapper wrapper) {
                 this.StreamWrappers.Add(wrapper);
+                return this;
+            }
+
+            public SocketServer Protocol(Func<IPXProtocol> provider) {
+                this.ProtocolProvider = provider;
                 return this;
             }
         }
@@ -99,7 +108,8 @@ namespace Pixie.Core.Services
                         sockServ.Port,
                         this.container,
                         sockServ.SenderId, 
-                        sockServ.StreamWrappers
+                        sockServ.StreamWrappers,
+                        sockServ.ProtocolProvider
                     );
                 case CliServer cliServ:
                     return new PXCliServer(

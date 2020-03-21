@@ -1,6 +1,7 @@
 ﻿using DryIoc;
 using Pixie.Core.Messages;
 using Pixie.Core.Services;
+using Pixie.Core.Sockets;
 using Pixie.Core.StreamWrappers;
 using System;
 using System.Collections.Generic;
@@ -11,47 +12,53 @@ using System.Reflection;
 
 namespace Pixie.Core
 {
-    internal class PXSocketClient : IPXClientService
+    internal class PXSocketClient : IPXClientService, IPXProtocolContact
     {
         public string Id { get; private set; }
-        public PXMessageReader StreamReader { get; private set; }
-        public PXMessageWriter StreamWriter { get; private set; }
 
-        private Stream stream;
+        private PXMessageEncoder encoder;
+        private IPXProtocol protocol;
+
         private TcpClient client;
+        private Func<TcpClient> clientFactory;
+        private IEnumerable<IPXStreamWrapper> wrappers;
+
         private IResolverContext context;
         private HashSet<int> subscriptions = new HashSet<int>();
 
         public event Action<PXSocketClient> OnDisconnect;
-        public event Action<PXSocketClient> OnBreakConnection;
 
-        public bool IsClosed { get; private set; }
-
-        public PXSocketClient(TcpClient tcpClient, IResolverContext context, IEnumerable<IPXStreamWrapper> wrappers) {
+        public PXSocketClient(TcpClient client, IResolverContext context, IEnumerable<IPXStreamWrapper> wrappers, IPXProtocol protocol, Func<TcpClient> clientFactory = null) {
             Id = Guid.NewGuid().ToString();
-            client = tcpClient;
-            stream = WrapStream(client.GetStream(), wrappers);
+            this.client = client;
+            this.clientFactory = clientFactory;
+            this.wrappers = wrappers.ToArray();
+            this.protocol = protocol;
+            protocol.Initialize(this);
 
-            StreamReader = new PXMessageReader(stream, context.Handlers().GetHandlableMessageTypes());
-            StreamWriter = new PXMessageWriter(stream);
-
+            this.encoder = new PXMessageEncoder(context.Handlers().GetHandlableMessageTypes());
             this.context = context;
+        }
 
-            StreamReader.OnDataAvailable += delegate (PXMessageReader reader) {
-                Process();
-            };
+        public void Start() {
+            SetupProtocol();
+        }
 
-            StreamReader.OnRawMessageReady += delegate (PXMessageReader reader, string rawMessage) {
-                LogRawMessage(rawMessage);
-            };
+        public void Stop() {
+            Close();
+        }
 
-            StreamReader.OnStreamClose += delegate {
-                Close();
-            };
+        public void Send(object message) {
+            this.protocol.SendMessage(this.encoder.EncodeMessage(message));
+        }
 
-            StreamReader.OnStreamError += delegate (PXMessageReader r, Exception e) {
-                OnClientError(e);
-            };
+        private void SetupProtocol() {
+            if (clientFactory != null) {
+                client?.Close();
+                client = clientFactory();
+            }
+
+            this.protocol.SetupStreams(WrapStream(client.GetStream(), this.wrappers));
         }
 
         private Stream WrapStream(Stream stream, IEnumerable<IPXStreamWrapper> wrappers) {
@@ -64,44 +71,16 @@ namespace Pixie.Core
             return result;
         }
 
-        public void Start() {
-            StreamReader.StartReadingCycle();
-        }
-
-        public void Stop() {
-            Close();
-        }
-
-        public void Process() {
-            try {
-                if (StreamReader.HasMessages) {
-                    this.context.Handlers().HandleMessage(
-                        StreamReader.DequeueMessage(),
-                        delegate(Action<IResolverContext> handler) {
-                            this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
-                                handler(messageContext);
-                            });
-                        }
-                    );
-                }
-            } catch (Exception e) {
-                Close();
-
-                this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
-            }
-        }
-
         private void OnClientError(Exception e) {
             this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClient);
-
-            OnBreakConnection?.Invoke(this);
         }
 
-        public bool IsSubscribed(int subscriptionId) {
+        //TODO: this method looks like it should be private, handle it
+        internal bool IsSubscribed(int subscriptionId) {
             return subscriptions.Contains(subscriptionId);
         }
 
-        public void ProcessClosingMessage() {
+        private void ProcessClosingMessage() {
             this.context.Handlers().HandleSpecialMessage(
                 PXHandlerService.SpecificMessageHandlerType.ClientDisconnect,
                 delegate(Action<IResolverContext> handler) {
@@ -112,13 +91,8 @@ namespace Pixie.Core
             );
         }
 
-        protected internal void Close() {
-            stream.Close();
+        private void Close() {
             client.Close();
-
-            IsClosed = true;
-
-            OnBreakConnection = null;
 
             OnDisconnect?.Invoke(this);
             OnDisconnect = null;
@@ -132,14 +106,6 @@ namespace Pixie.Core
             }
         }
 
-        private void LogRawMessage(string rawMessage) {
-            this.context.Logger().Debug(delegate { return $"Message received: {rawMessage}"; });
-        }
-
-        public void Send(object message) {
-            this.StreamWriter.Send(message);
-        }
-
         //IPXClientService
 
         public void Subscribe(int subscriptionId) {
@@ -151,5 +117,42 @@ namespace Pixie.Core
         }
 
         //////////////////
+
+        //IPXProtocolFeedbackReceiver
+
+        public void RequestReconnect() {
+            SetupProtocol();
+        }
+
+        public void ReceivedMessage(byte[] message) {
+            this.context.Logger().Debug(delegate { return $"Message received: {message}"; });
+
+            try {
+                this.context.Handlers().HandleMessage(
+                    encoder.DecodeMessage(message),
+                    delegate (Action<IResolverContext> handler) {
+                        this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
+                            handler(messageContext);
+                        });
+                    }
+                );
+            } catch (Exception e) {
+                Close();
+
+                this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
+            }
+        }
+
+        public void ClientDisconnected() {
+            ProcessClosingMessage();
+
+            Close();
+        }
+
+        public void ClientException(Exception e) {
+            OnClientError(e);
+        }
+
+        /////////////////////////////
     }
 }

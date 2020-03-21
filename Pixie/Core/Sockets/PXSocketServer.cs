@@ -16,6 +16,7 @@ namespace Pixie.Core.Sockets
         private TcpListener listener;
         private IContainer container;
         private IEnumerable<IPXStreamWrapper> wrappers;
+        private Func<IPXProtocol> protocolProvider;
 
         private IPAddress address;
         private int port;
@@ -23,13 +24,14 @@ namespace Pixie.Core.Sockets
 
         private IDictionary<string, PXSocketClient> clients = new ConcurrentDictionary<string, PXSocketClient>();
 
-        public PXSocketServer(string address, int port, IContainer container, int senderId, IEnumerable<IPXStreamWrapper> wrappers) {
+        public PXSocketServer(string address, int port, IContainer container, int senderId, IEnumerable<IPXStreamWrapper> wrappers, Func<IPXProtocol> protocolProvider) {
             this.address = IPAddress.Parse(address);
             this.port = port;
             this.listener = new TcpListener(this.address, this.port);
             this.senderId = senderId;
             this.container = container;
             this.wrappers = wrappers;
+            this.protocolProvider = protocolProvider;
         }
 
         async public Task Start() {
@@ -45,7 +47,8 @@ namespace Pixie.Core.Sockets
                         PXSocketClient client = new PXSocketClient(
                             await this.listener.AcceptTcpClientAsync(),
                             socketServerContext,
-                            this.wrappers
+                            this.wrappers,
+                            this.protocolProvider()
                         );
 
                         clients[client.Id] = client;
@@ -69,17 +72,16 @@ namespace Pixie.Core.Sockets
         }
 
         private void DisconnectClient(PXSocketClient client) {
-            client.ProcessClosingMessage();
             clients.Remove(client.Id);
         }
 
-        protected internal void Disconnect() {
+        private void Disconnect() {
             this.container.Logger().Info("Stopping socket server");
 
             listener?.Stop();
 
             foreach (var client in clients) {
-                client.Value.Close();
+                client.Value.Stop();
             }
         }
 
