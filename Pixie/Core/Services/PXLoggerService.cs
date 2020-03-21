@@ -17,7 +17,7 @@ namespace Pixie.Core.Services
         }
 
         private IPXLogWriterService writer;
-        private SerialActionQueue processingQueue = new SerialActionQueue();
+        private PXSerialActionQueue processingQueue = new PXSerialActionQueue();
 
         public LogLevel Level { set; get; }
 

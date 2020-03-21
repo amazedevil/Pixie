@@ -6,15 +6,15 @@ using System.Text;
 
 namespace Pixie.Core.Common.Concurrent
 {
-    internal class SerialActionQueue
+    internal class PXSerialActionQueue
     {
         private AsyncProducerConsumerQueue<Action> actions = new AsyncProducerConsumerQueue<Action>();
 
-        public SerialActionQueue() {
+        public PXSerialActionQueue() {
             RunProcessing();
         }
 
-        ~SerialActionQueue() {
+        ~PXSerialActionQueue() {
             actions.CompleteAdding();
         }
 
