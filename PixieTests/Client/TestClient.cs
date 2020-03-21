@@ -5,10 +5,12 @@ using System.IO;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
+using Pixie.Core.Sockets;
+using Pixie.Toolbox.Protocols;
 
 namespace PixieCoreTests.Client
 {
-    public class TestClient
+    public class TestClient : IPXProtocolContact
     {
         public class Builder
         {
@@ -43,9 +45,8 @@ namespace PixieCoreTests.Client
         }
 
         private TcpClient connection = null;
-        private Stream stream = null;
-        private PXMessageReader reader = null;
-        private PXMessageWriter writer = null;
+        private IPXProtocol protocol;
+        private PXMessageEncoder encoder = null;
         private bool ssl = false;
 
         private Type[] eventTypes;
@@ -53,28 +54,22 @@ namespace PixieCoreTests.Client
         private int port;
         private Action<object> onMessageRecived;
 
-        public TestClient(string host, int port, bool ssl, Type[] eventTypes, Action<object> onMessageRecived) {
+        public TestClient(string host, int port, bool ssl, Type[] eventTypes, Action<object> onMessageRecived, IPXProtocol protocol = null) {
             this.eventTypes = eventTypes;
             this.host = host != "0.0.0.0" ? host : "127.0.0.1";
             this.port = port;
             this.ssl = ssl;
             this.onMessageRecived = onMessageRecived;
+            this.protocol = protocol ?? new PXReliableDeliveryProtocol();
+            this.protocol.Initialize(this);
         }
 
         public void Run() {
             try {
                 connection = new TcpClient(this.host, this.port);
-                stream = WrapSslIfNeeded(connection.GetStream());
-                reader = new PXMessageReader(stream, eventTypes);
-                writer = new PXMessageWriter(stream);
+                encoder = new PXMessageEncoder(eventTypes);
 
-                reader.OnDataAvailable += delegate (PXMessageReader r) {
-                    while (r.HasMessages) {
-                        ProcessMessage(r.DequeueMessage());
-                    }
-                };
-
-                reader.StartReadingCycle();
+                protocol.SetupStreams(WrapSslIfNeeded(connection.GetStream()));
             } catch (Exception e) {
                 Dismiss();
                 throw e;
@@ -123,19 +118,27 @@ namespace PixieCoreTests.Client
         }
 
         private void Dismiss() {
-            reader = null;
-            writer = null;
-            stream?.Dispose();
             connection?.Close();
         }
 
-        private void ProcessMessage(object message) {
-            this.onMessageRecived(message);
-        }
-
         public void SendMessage(object message) {
-            writer.Send(message);
+            this.protocol.SendMessage(this.encoder.EncodeMessage(message));
         }
 
+        public void RequestReconnect() {
+            //Not supposed to be used
+        }
+
+        public void ReceivedMessage(byte[] message) {
+            this.onMessageRecived(this.encoder.DecodeMessage(message));
+        }
+
+        public void ClientDisconnected() {
+            Console.WriteLine("Test client disconnected");
+        }
+
+        public void ClientException(Exception e) {
+            throw e;
+        }
     }
 }
