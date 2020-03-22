@@ -109,6 +109,12 @@ namespace Pixie.Core.Services
                 return new MessageHandlerItem(typeof(T), provider);
             }
 
+            public static MessageHandlerItem CreateWithProvider<T, R>(Func<PXRequestMessageHandlerBase<T, R>> provider) 
+                where T : struct 
+                where R : struct {
+                return new MessageHandlerItem(typeof(T), provider);
+            }
+
             public static MessageHandlerItem CreateWithMessageHandlerType(Type messageHandlerType) {
                 //TODO: make type validation, to throw specific exception if it doesn't have required fields
                 return new MessageHandlerItem(messageHandlerType.GetProperty(
@@ -183,7 +189,7 @@ namespace Pixie.Core.Services
 
         private IDictionary<Type, List<MessageHandlerWrapper>> messages = new Dictionary<Type, List<MessageHandlerWrapper>>();
         private IDictionary<SpecificMessageHandlerType, List<SpecificMessageHandlerWrapper>> specificMessages 
-            = new Dictionary<SpecificMessageHandlerType, List<SpecificMessageHandlerWrapper>> ();
+            = new Dictionary<SpecificMessageHandlerType, List<SpecificMessageHandlerWrapper>>();
         private IDictionary<Type, CommonHandlerWrapper> cliCommands = new Dictionary<Type, CommonHandlerWrapper>();
         private IDictionary<Type, CommonHandlerWrapper> jobs = new Dictionary<Type, CommonHandlerWrapper>();
 
@@ -252,6 +258,19 @@ namespace Pixie.Core.Services
                     }, context);
                 });
             }
+        }
+
+        internal object HandleRequestMessage(object message, Action<Action<IResolverContext>> contextProvider) {
+            var wrapper = messages[message.GetType()].First();
+            var handler = wrapper.provider();
+
+            contextProvider(delegate (IResolverContext context) {
+                ApplyMiddlewares(wrapper.middlewares, delegate (IResolverContext processedContext) {
+                    handler.SetupData(message).Handle(processedContext);
+                }, context);
+            });
+
+            return handler.Result;
         }
 
         internal void HandleSpecialMessage(SpecificMessageHandlerType type, Action<Action<IResolverContext>> contextProvider) {

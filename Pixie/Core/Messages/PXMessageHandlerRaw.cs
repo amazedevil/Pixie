@@ -10,7 +10,10 @@ namespace Pixie.Core.Messages
         public static Type DataType { get { return null; } }
 
         protected object data;
+        protected object result;
         protected IResolverContext context;
+
+        internal object Result { get => result; }
 
         internal PXMessageHandlerRaw SetupData(object data) {
             this.data = data;

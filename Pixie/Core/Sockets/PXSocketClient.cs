@@ -106,6 +106,12 @@ namespace Pixie.Core
             }
         }
 
+        private void MessageContextProvider(Action<IResolverContext> handler) {
+            this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
+                handler(messageContext);
+            });
+        }
+
         //IPXClientService
 
         public void Subscribe(int subscriptionId) {
@@ -130,15 +136,24 @@ namespace Pixie.Core
             try {
                 this.context.Handlers().HandleMessage(
                     encoder.DecodeMessage(message),
-                    delegate (Action<IResolverContext> handler) {
-                        this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
-                            handler(messageContext);
-                        });
-                    }
+                    this.MessageContextProvider
                 );
             } catch (Exception e) {
-                Close();
+                this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
+            }
+        }
 
+        public void ReceivedRequestMessage(ushort id, byte[] message) {
+            this.context.Logger().Debug(delegate { return $"Request message received: {message}"; });
+
+            try {
+                this.protocol.SendResponse(id, this.encoder.EncodeMessage(
+                    this.context.Handlers().HandleRequestMessage(
+                        encoder.DecodeMessage(message),
+                        this.MessageContextProvider
+                    )
+                ));
+            } catch (Exception e) {
                 this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
             }
         }

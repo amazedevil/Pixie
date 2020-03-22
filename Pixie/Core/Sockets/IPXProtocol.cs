@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Threading.Tasks;
 
 namespace Pixie.Core.Sockets
 {
@@ -9,5 +10,9 @@ namespace Pixie.Core.Sockets
         void SetupStreams(Stream stream);
 
         void SendMessage(byte[] message);
+
+        void SendResponse(ushort id, byte[] response);
+
+        Task<byte[]> SendRequestMessage(byte[] message);
     }
 }

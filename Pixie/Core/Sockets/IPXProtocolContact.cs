@@ -10,6 +10,8 @@ namespace Pixie.Core.Sockets
 
         void ReceivedMessage(byte[] message);
 
+        void ReceivedRequestMessage(ushort id, byte[] message);
+
         void ClientDisconnected();
 
         void ClientException(Exception e);
