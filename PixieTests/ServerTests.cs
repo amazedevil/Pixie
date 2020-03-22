@@ -145,7 +145,7 @@ namespace PixieTests
             }
 
             public void OnRegister(IContainer container) {
-                container.Endpoints().RegisterSockerServer(this.address, this.port);
+                container.Endpoints().RegisterSocketServer(this.address, this.port);
 
                 if (this.remoteAddress != default) {
                     container.Agents().RegisterAgent(remoteAddress, remotePort);

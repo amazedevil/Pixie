@@ -45,7 +45,7 @@ namespace PixieTests.Common
             }
 
             public virtual void OnRegister(IContainer container) {
-                HandlerServerDescription(container.Endpoints().RegisterSockerServer(this.Address, this.Port));
+                HandlerServerDescription(container.Endpoints().RegisterSocketServer(this.Address, this.Port));
 
                 container.Handlers().Register(PXHandlerService.MessageHandlerItem.CreateWithMessageHandlerType<MessageHandler>());
             }

@@ -78,7 +78,7 @@ namespace Pixie.Core.Services
             this.container = container;
         }
 
-        public SocketServer RegisterSockerServer(string address, int port) {
+        public SocketServer RegisterSocketServer(string address, int port) {
             return AddDescription(new SocketServer(address, port)) as SocketServer;
         }
 
