@@ -19,6 +19,7 @@ namespace PixieCoreTests.Client
             private bool ssl = false;
             private Type[] eventTypes = new Type[] { };
             private Action<object> onMessageRecived = null;
+            private Func<object, object> onMessageRequestRecived = null;
 
             private Builder() { }
 
@@ -27,6 +28,7 @@ namespace PixieCoreTests.Client
             public Builder SslEnabled(bool ssl) { this.ssl = ssl; return this; }
             public Builder EventTypes(Type[] types) { this.eventTypes = types; return this; }
             public Builder OnMessageReceived(Action<object> onMessageRecived) { this.onMessageRecived = onMessageRecived; return this; }
+            public Builder OnMessageRequestReceived(Func<object, object> onMessageRequestRecived) { this.onMessageRequestRecived = onMessageRequestRecived; return this; }
 
             //required parameters
             public static Builder Create(string host, int port) {
@@ -39,7 +41,8 @@ namespace PixieCoreTests.Client
                     this.port, 
                     this.ssl, 
                     this.eventTypes, 
-                    this.onMessageRecived
+                    this.onMessageRecived,
+                    this.onMessageRequestRecived
                 );
             }
         }
@@ -53,13 +56,23 @@ namespace PixieCoreTests.Client
         private string host;
         private int port;
         private Action<object> onMessageRecived;
+        private Func<object, object> onMessageRequestReceived;
 
-        public TestClient(string host, int port, bool ssl, Type[] eventTypes, Action<object> onMessageRecived, IPXProtocol protocol = null) {
+        public TestClient(
+            string host, 
+            int port, 
+            bool ssl, 
+            Type[] eventTypes, 
+            Action<object> onMessageRecived, 
+            Func<object, object> onMessageRequestRecived, 
+            IPXProtocol protocol = null
+        ) {
             this.eventTypes = eventTypes;
             this.host = host != "0.0.0.0" ? host : "127.0.0.1";
             this.port = port;
             this.ssl = ssl;
             this.onMessageRecived = onMessageRecived;
+            this.onMessageRequestReceived = onMessageRequestRecived;
             this.protocol = protocol ?? new PXReliableDeliveryProtocol();
             this.protocol.Initialize(this);
         }
@@ -131,6 +144,12 @@ namespace PixieCoreTests.Client
 
         public void ReceivedMessage(byte[] message) {
             this.onMessageRecived(this.encoder.DecodeMessage(message));
+        }
+
+        public void ReceivedRequestMessage(ushort id, byte[] message) {
+            this.protocol.SendResponse(id, this.encoder.EncodeMessage(
+                this.onMessageRequestReceived(this.encoder.DecodeMessage(message))
+            ));
         }
 
         public void ClientDisconnected() {
