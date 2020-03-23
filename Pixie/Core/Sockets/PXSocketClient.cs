@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Pixie.Core
 {
@@ -50,6 +51,10 @@ namespace Pixie.Core
 
         public void Send(object message) {
             this.protocol.SendMessage(this.encoder.EncodeMessage(message));
+        }
+
+        public async Task<object> SendRequest(object message) {
+            return this.encoder.DecodeMessage(await this.protocol.SendRequestMessage(this.encoder.EncodeMessage(message)));
         }
 
         private void SetupProtocol() {

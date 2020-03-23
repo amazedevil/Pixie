@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Pixie.Core.Agents
 {
@@ -43,6 +44,10 @@ namespace Pixie.Core.Agents
 
         public void Send(IEnumerable<string> clientIds, object data, int subscriptionId) {
             Send(clientIds, data);
+        }
+
+        public Task<object> SendRequest(string clientId, object data) {
+            return this.client.SendRequest(clientId);
         }
 
         /////////////////////////

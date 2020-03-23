@@ -113,6 +113,10 @@ namespace Pixie.Core.Sockets
             return clients.Keys;
         }
 
+        public Task<object> SendRequest(string clientId, object data) {
+            return clients[clientId].SendRequest(data);
+        }
+
         /////////////////////////
     }
 }
