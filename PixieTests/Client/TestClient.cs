@@ -7,6 +7,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
 using Pixie.Core.Sockets;
 using Pixie.Toolbox.Protocols;
+using System.Threading.Tasks;
 
 namespace PixieCoreTests.Client
 {
@@ -136,6 +137,10 @@ namespace PixieCoreTests.Client
 
         public void SendMessage(object message) {
             this.protocol.SendMessage(this.encoder.EncodeMessage(message));
+        }
+
+        public async Task<object> SendRequest(object message) {
+            return this.encoder.DecodeMessage(await this.protocol.SendRequestMessage(this.encoder.EncodeMessage(message)));
         }
 
         public void RequestReconnect() {
