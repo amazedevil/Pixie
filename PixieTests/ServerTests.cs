@@ -16,6 +16,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PixieTests
 {
@@ -191,6 +192,82 @@ namespace PixieTests
             }
 
             dataReceivedEvent.Reset();
+        }
+
+        //Request test
+        private class RequestTestServer : PXServer, IPXServiceProvider
+        {
+            private class FuncExecutorMessageHandler : PXRequestMessageHandlerBase<TestMessages.TestMessageType1, TestMessages.TestMessageType2>
+            {
+                private Func<TestMessages.TestMessageType1, TestMessages.TestMessageType2> func;
+
+                public FuncExecutorMessageHandler(Func<TestMessages.TestMessageType1, TestMessages.TestMessageType2> func) {
+                    this.func = func;
+                }
+
+                public override TestMessages.TestMessageType2 Handle(TestMessages.TestMessageType1 data) {
+                    return this.func(data);
+                }
+            }
+
+            private FuncExecutorMessageHandler handler;
+            private string address;
+            private int port;
+
+            internal RequestTestServer(Func<TestMessages.TestMessageType1, TestMessages.TestMessageType2> func, string address, int port) : base() {
+                this.handler = new FuncExecutorMessageHandler(func);
+                this.address = address;
+                this.port = port;
+            }
+
+            protected override IPXServiceProvider[] GetServiceProviders() {
+                return new IPXServiceProvider[] {
+                    this,
+                };
+            }
+
+            public Task<object> Send(object message) {
+                return this.container.AgentSender().SendRequest(null, message);
+            }
+
+            public void OnRegister(IContainer container) {
+                container.Endpoints().RegisterSocketServer(this.address, this.port);
+
+                container.Handlers().Register(PXHandlerService.MessageHandlerItem.CreateWithProvider(delegate { return this.handler; }));
+            }
+
+            public void OnInitialize(IContainer container) {
+            }
+        }
+
+        [Test]
+        public async Task RequestTest() {
+            var clientToServerMessage = TestMessages.TestMessageType1Sample1();
+            var serverToClientResponse = TestMessages.TestMessageType2Sample1();
+            var serverHost = "0.0.0.0";
+            var serverPort = PortProvider.ProviderPort();
+
+            var server = new RequestTestServer(delegate(TestMessages.TestMessageType1 message) {
+                Assert.AreEqual(clientToServerMessage, message);
+                return serverToClientResponse;
+            }, serverHost, serverPort);
+
+            var clientBuilder = TestClient.Builder.Create(
+                serverHost,
+                serverPort
+            );
+
+            TestClient client = TestClient.Builder.Create(
+                serverHost,
+                serverPort
+            ).EventTypes(new Type[] { 
+                typeof(TestMessages.TestMessageType2)
+            }).Build();
+
+            server.StartAsync();
+            client.Run();
+
+            Assert.AreEqual(serverToClientResponse, await client.SendRequest(clientToServerMessage));
         }
     }
 }
