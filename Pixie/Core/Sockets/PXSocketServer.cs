@@ -105,10 +105,6 @@ namespace Pixie.Core.Sockets
             }
         }
 
-        public void Send(IEnumerable<string> clientIds, object data, int subscriptionId) {
-            this.Send(clientIds.Where(cid => clients.ContainsKey(cid) && clients[cid].IsSubscribed(subscriptionId)), data);
-        }
-
         public IEnumerable<string> GetClientIds() {
             return clients.Keys;
         }

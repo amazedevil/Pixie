@@ -25,7 +25,6 @@ namespace Pixie.Core
         private IEnumerable<IPXStreamWrapper> wrappers;
 
         private IResolverContext context;
-        private HashSet<int> subscriptions = new HashSet<int>();
 
         public event Action<PXSocketClient> OnDisconnect;
 
@@ -80,11 +79,6 @@ namespace Pixie.Core
             this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClient);
         }
 
-        //TODO: this method looks like it should be private, handle it
-        internal bool IsSubscribed(int subscriptionId) {
-            return subscriptions.Contains(subscriptionId);
-        }
-
         private void ProcessClosingMessage() {
             this.context.Handlers().HandleSpecialMessage(
                 PXHandlerService.SpecificMessageHandlerType.ClientDisconnect,
@@ -116,18 +110,6 @@ namespace Pixie.Core
                 handler(messageContext);
             });
         }
-
-        //IPXClientService
-
-        public void Subscribe(int subscriptionId) {
-            this.subscriptions.Add(subscriptionId);
-        }
-
-        public void Unsubscribe(int subscriptionId) {
-            this.subscriptions.Remove(subscriptionId);
-        }
-
-        //////////////////
 
         //IPXProtocolFeedbackReceiver
 
