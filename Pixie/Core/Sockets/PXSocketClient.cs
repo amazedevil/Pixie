@@ -80,14 +80,18 @@ namespace Pixie.Core
         }
 
         private void ProcessClosingMessage() {
-            this.context.Handlers().HandleSpecialMessage(
-                PXHandlerService.SpecificMessageHandlerType.ClientDisconnect,
-                delegate(Action<IResolverContext> handler) {
-                    this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
-                        handler(messageContext);
-                    });
-                }
-            );
+            try {
+                this.context.Handlers().HandleSpecialMessage(
+                    PXHandlerService.SpecificMessageHandlerType.ClientDisconnect,
+                    delegate (Action<IResolverContext> handler) {
+                        this.ExecuteInMessageScope(delegate (IResolverContext messageContext) {
+                            handler(messageContext);
+                        });
+                    }
+                );
+            } catch (Exception e) {
+                this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
+            }
         }
 
         private void Close() {
