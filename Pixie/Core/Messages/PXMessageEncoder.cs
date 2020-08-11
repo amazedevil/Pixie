@@ -20,6 +20,16 @@ namespace Pixie.Core.Messages
             }
         }
 
+        internal void RegisterMessageTypeIfNotRegistered(Type type) {
+            var hash = PXMessageInfo.GetMessageTypeHashCode(type);
+
+            if (this.messageTypes.ContainsKey(hash)) {
+                return;
+            }
+
+            this.messageTypes[hash] = type;
+        }
+
         public object DecodeMessage(byte[] data) {
             var obj = JObject.Parse(Encoding.UTF8.GetString(data));
             var hash = obj[PXMessageInfo.MESSAGE_SERIALIZATION_FIELD_NAME].Value<int>();
