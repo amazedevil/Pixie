@@ -122,9 +122,7 @@ namespace Pixie.Core.Services
         }
 
         public async Task StartEndpoints() {
-            foreach (var ep in this.endpoints) {
-                await ep.Start();
-            }
+            await Task.WhenAll(this.endpoints.Select(e => e.Start()).ToArray());
         }
 
         public void StopEndpoints() {
