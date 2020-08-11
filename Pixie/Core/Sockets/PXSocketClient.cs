@@ -48,12 +48,14 @@ namespace Pixie.Core
             Close();
         }
 
-        public void Send(object message) {
+        public void Send<M>(M message) where M : struct {
             this.protocol.SendMessage(this.encoder.EncodeMessage(message));
         }
 
-        public async Task<object> SendRequest(object message) {
-            return this.encoder.DecodeMessage(await this.protocol.SendRequestMessage(this.encoder.EncodeMessage(message)));
+        public async Task<R> SendRequest<M, R>(M message) where M: struct where R: struct {
+            this.encoder.RegisterMessageTypeIfNotRegistered(typeof(R));
+
+            return (R)this.encoder.DecodeMessage(await this.protocol.SendRequestMessage(this.encoder.EncodeMessage(message)));
         }
 
         private void SetupProtocol() {

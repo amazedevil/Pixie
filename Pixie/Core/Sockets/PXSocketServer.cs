@@ -93,7 +93,7 @@ namespace Pixie.Core.Sockets
 
         public int SenderId { get => this.senderId; }
 
-        public void Send(IEnumerable<string> clientIds, object message) {
+        public void Send<M>(IEnumerable<string> clientIds, M message) where M: struct {
             this.container.Logger().Info(
                 "Command sent to clients: " + message.GetType().ToString()
             );
@@ -109,8 +109,8 @@ namespace Pixie.Core.Sockets
             return clients.Keys;
         }
 
-        public Task<object> SendRequest(string clientId, object data) {
-            return clients[clientId].SendRequest(data);
+        public Task<R> SendRequest<M, R>(string clientId, M data) where R: struct where M: struct {
+            return clients[clientId].SendRequest<M, R>(data);
         }
 
         /////////////////////////

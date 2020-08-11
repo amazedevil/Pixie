@@ -38,16 +38,16 @@ namespace Pixie.Core.Agents
             return null;
         }
 
-        public void Send(IEnumerable<string> clientIds, object data) {
+        public void Send<M>(IEnumerable<string> clientIds, M data) where M : struct {
             this.client.Send(data);
         }
 
-        public void Send(IEnumerable<string> clientIds, object data, int subscriptionId) {
+        public void Send<M>(IEnumerable<string> clientIds, M data, int subscriptionId) where M : struct {
             Send(clientIds, data);
         }
 
-        public Task<object> SendRequest(string clientId, object data) {
-            return this.client.SendRequest(clientId);
+        public Task<R> SendRequest<M, R>(string clientId, M data) where M : struct where R : struct {
+            return this.client.SendRequest<M, R>(data);
         }
 
         /////////////////////////
