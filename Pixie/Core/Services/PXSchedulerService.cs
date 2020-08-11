@@ -69,7 +69,7 @@ namespace Pixie.Core.Services
         }
 
         private void ScheduleInternal(IJobDetail job, ITrigger trigger) {
-            if (!job.JobType.IsInstanceOfType(typeof(PXJobBase))) {
+            if (!job.JobType.IsSubclassOf(typeof(PXJobBase))) {
                 throw new PXJobBaseTypeInvalid(job.JobType);
             }
 
