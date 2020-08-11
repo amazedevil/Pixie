@@ -25,7 +25,7 @@ namespace PixieTests.Common
 
         public class TestServer : PXServer, IPXServiceProvider
         {
-            internal Func<object, object> Action;
+            internal Func<TestMessages.TestMessageType1, TestMessages.TestMessageType2> Action;
 
             public string Address { get; private set; }
             public int Port { get; private set; }
@@ -60,7 +60,7 @@ namespace PixieTests.Common
             ManualResetEvent serverReceivedDataEvent = new ManualResetEvent(false);
             ManualResetEvent clientReceivedDataEvent = new ManualResetEvent(false);
 
-            server.Action = delegate (object receivedMessage) {
+            server.Action = delegate (TestMessages.TestMessageType1 receivedMessage) {
                 Assert.AreEqual(receivedMessage, clientToServerMessage);
                 serverReceivedDataEvent.Set();
 

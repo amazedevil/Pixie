@@ -135,12 +135,12 @@ namespace PixieCoreTests.Client
             connection?.Close();
         }
 
-        public void SendMessage(object message) {
+        public void SendMessage<A>(A message) where A : struct {
             this.protocol.SendMessage(this.encoder.EncodeMessage(message));
         }
 
-        public async Task<object> SendRequest(object message) {
-            return this.encoder.DecodeMessage(await this.protocol.SendRequestMessage(this.encoder.EncodeMessage(message)));
+        public async Task<R> SendRequest<A, R>(A message) where A : struct where R : struct {
+            return (R)this.encoder.DecodeMessage(await this.protocol.SendRequestMessage(this.encoder.EncodeMessage(message)));
         }
 
         public void RequestReconnect() {

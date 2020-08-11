@@ -141,7 +141,7 @@ namespace PixieTests
                 };
             }
 
-            public void Send(object message) {
+            public void Send(TestMessages.TestMessageType1 message) {
                 this.container.AgentSender().Send(null, message);
             }
 
@@ -226,8 +226,8 @@ namespace PixieTests
                 };
             }
 
-            public Task<object> Send(object message) {
-                return this.container.AgentSender().SendRequest(null, message);
+            public Task<R> Send<M, R>(M message) where R: struct where M : struct {
+                return this.container.AgentSender().SendRequest<M, R>(null, message);
             }
 
             public void OnRegister(IContainer container) {
@@ -267,7 +267,10 @@ namespace PixieTests
             server.StartAsync();
             client.Run();
 
-            Assert.AreEqual(serverToClientResponse, await client.SendRequest(clientToServerMessage));
+            Assert.AreEqual(
+                serverToClientResponse, 
+                await client.SendRequest<TestMessages.TestMessageType1, TestMessages.TestMessageType2>(clientToServerMessage)
+            );
         }
     }
 }
