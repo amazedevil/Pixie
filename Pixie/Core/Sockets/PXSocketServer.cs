@@ -99,8 +99,8 @@ namespace Pixie.Core.Sockets
             );
 
             foreach (var id in clientIds) {
-                if (clients.ContainsKey(id)) {
-                    clients[id].Send(message);
+                if (clients.TryGetValue(id, out var client)) {
+                    client.Send(message);
                 }
             }
         }
