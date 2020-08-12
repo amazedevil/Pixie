@@ -83,7 +83,7 @@ namespace PixieCoreTests.Client
                 connection = new TcpClient(this.host, this.port);
                 encoder = new PXMessageEncoder(eventTypes);
 
-                protocol.SetupStreams(WrapSslIfNeeded(connection.GetStream()));
+                protocol.SetupStream(WrapSslIfNeeded(connection.GetStream()));
             } catch (Exception e) {
                 Dismiss();
                 throw e;
@@ -161,7 +161,7 @@ namespace PixieCoreTests.Client
             Console.WriteLine("Test client disconnected");
         }
 
-        public void ClientException(Exception e) {
+        public void OnClientError(Exception e) {
             throw e;
         }
     }

@@ -14,6 +14,6 @@ namespace Pixie.Core.Sockets
 
         void ClientDisconnected();
 
-        void ClientException(Exception e);
+        void OnClientError(Exception e);
     }
 }

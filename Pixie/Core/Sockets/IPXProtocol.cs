@@ -7,7 +7,7 @@ namespace Pixie.Core.Sockets
     {
         void Initialize(IPXProtocolContact contact);
 
-        void SetupStreams(Stream stream);
+        void SetupStream(Stream stream);
 
         void SendMessage(byte[] message);
 

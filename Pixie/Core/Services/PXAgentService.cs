@@ -30,7 +30,7 @@ namespace Pixie.Core.Services
                 this.Port = port;
                 this.SenderId = PXSenderDispatcherService.DEFAULT_AGENT_SENDER_ID;
                 this.StreamWrappers = new List<IPXStreamWrapper>();
-                this.ProtocolProvider = delegate { return new PXReliableDeliveryProtocol(true); };
+                this.ProtocolProvider = delegate { return new PXReliableDeliveryProtocol(); };
             }
 
             public Agent Sender(int id) {

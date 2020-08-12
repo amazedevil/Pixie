@@ -1,4 +1,6 @@
 ﻿using DryIoc;
+using Pixie.Core.Common.Streams;
+using Pixie.Core.Exceptions;
 using Pixie.Core.Messages;
 using Pixie.Core.Services;
 using Pixie.Core.Sockets;
@@ -64,7 +66,7 @@ namespace Pixie.Core
                 client = clientFactory();
             }
 
-            this.protocol.SetupStreams(WrapStream(client.GetStream(), this.wrappers));
+            this.protocol.SetupStream(WrapStream(client.GetStream(), this.wrappers));
         }
 
         private Stream WrapStream(Stream stream, IEnumerable<IPXStreamWrapper> wrappers) {
@@ -77,7 +79,7 @@ namespace Pixie.Core
             return result;
         }
 
-        private void OnClientError(Exception e) {
+        public void OnClientError(Exception e) {
             this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClient);
         }
 
@@ -97,10 +99,9 @@ namespace Pixie.Core
         }
 
         private void Close() {
-            client.Close();
+            this.client.Close();
 
-            OnDisconnect?.Invoke(this);
-            OnDisconnect = null;
+            ClientDisconnected();
         }
 
         private void ExecuteInMessageScope(Action<IResolverContext> action) {
@@ -154,11 +155,8 @@ namespace Pixie.Core
         public void ClientDisconnected() {
             ProcessClosingMessage();
 
-            Close();
-        }
-
-        public void ClientException(Exception e) {
-            OnClientError(e);
+            this.OnDisconnect?.Invoke(this);
+            this.OnDisconnect = null;
         }
 
         /////////////////////////////
