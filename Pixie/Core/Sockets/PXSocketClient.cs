@@ -32,7 +32,7 @@ namespace Pixie.Core
 
         public PXSocketClient(TcpClient client, IResolverContext context, IEnumerable<IPXStreamWrapper> wrappers, IPXProtocol protocol, Func<TcpClient> clientFactory = null) {
             Id = Guid.NewGuid().ToString();
-            this.client = client;
+            this.client = client ?? clientFactory();
             this.clientFactory = clientFactory;
             this.wrappers = wrappers.ToArray();
             this.protocol = protocol;
@@ -43,6 +43,10 @@ namespace Pixie.Core
         }
 
         public void Start() {
+            if (this.client == null) {
+                this.client = clientFactory();
+            }
+
             SetupProtocol();
         }
 
@@ -61,11 +65,6 @@ namespace Pixie.Core
         }
 
         private void SetupProtocol() {
-            if (clientFactory != null) {
-                client?.Close();
-                client = clientFactory();
-            }
-
             this.protocol.SetupStream(WrapStream(client.GetStream(), this.wrappers));
         }
 
@@ -121,7 +120,12 @@ namespace Pixie.Core
         //IPXProtocolFeedbackReceiver
 
         public void RequestReconnect() {
-            SetupProtocol();
+            if (clientFactory != null) {
+                client?.Close();
+                client = clientFactory();
+
+                SetupProtocol();
+            }
         }
 
         public void ReceivedMessage(byte[] message) {
