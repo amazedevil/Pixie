@@ -194,6 +194,16 @@ namespace Pixie.Core.Services
         private IDictionary<Type, CommonHandlerWrapper> jobs = new Dictionary<Type, CommonHandlerWrapper>();
 
         private bool isRegistrationClosed = false;
+
+        public PXHandlerService RegisterGroup(Action<Group> registrationAction) {
+            Group group = new Group();
+
+            registrationAction(group);
+
+            Register(group);
+            
+            return this;
+        }
         
         public void Register(MappingItem item) {
             if (isRegistrationClosed) {
