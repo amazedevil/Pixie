@@ -29,16 +29,22 @@ namespace Pixie.Core.Common.Streams
 
         public async Task<byte[]> ReadBytes(int count, CancellationToken? cancellationToken = null) {
             byte[] buffer = new byte[count];
-            int readCount;
+            int readCount = 0;
 
-            if (cancellationToken.HasValue) {
-                readCount = await this.innerStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken.Value);
-            } else {
-                readCount = await this.innerStream.ReadAsync(buffer, 0, buffer.Length);
-            }
+            while (readCount < count) {
+                int bytesRead;
 
-            if (readCount == 0) {
-                throw new EmptyStreamException();
+                if (cancellationToken.HasValue) {
+                    bytesRead = await this.innerStream.ReadAsync(buffer, readCount, count - readCount, cancellationToken.Value);
+                } else {
+                    bytesRead = await this.innerStream.ReadAsync(buffer, readCount, count - readCount);
+                }
+
+                if (bytesRead == 0) {
+                    throw new EmptyStreamException();
+                }
+
+                readCount += bytesRead;
             }
 
             return buffer;
