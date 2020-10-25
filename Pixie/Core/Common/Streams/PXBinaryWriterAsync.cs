@@ -31,6 +31,7 @@ namespace Pixie.Core.Common.Streams
 
         public async Task FlushAsync() {
             var bytes = this.buffer.ToArray();
+            this.buffer = new MemoryStream();
             await this.innerStream.WriteAsync(bytes, 0, bytes.Length);
         }
     }
