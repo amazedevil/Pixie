@@ -1,4 +1,5 @@
 ﻿using DryIoc;
+using Newtonsoft.Json.Serialization;
 using Pixie.Core.Common.Streams;
 using Pixie.Core.Exceptions;
 using Pixie.Core.Messages;
@@ -11,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Pixie.Core
@@ -22,40 +24,60 @@ namespace Pixie.Core
         private PXMessageEncoder encoder;
         private IPXProtocol protocol;
 
-        private TcpClient client;
-        private Func<TcpClient> clientFactory;
-        private IEnumerable<IPXStreamWrapper> wrappers;
-
+        private Stream stream;
         private IResolverContext context;
+        private PXExceptionsFilterStream exceptionFilter;
 
-        public event Action<PXSocketClient> OnDisconnect;
+        public event Action<PXSocketClient> OnDisposed;
+        public event Action<PXSocketClient> OnDisconnected;
 
-        public PXSocketClient(TcpClient client, IResolverContext context, IEnumerable<IPXStreamWrapper> wrappers, IPXProtocol protocol, Func<TcpClient> clientFactory = null) {
-            Id = Guid.NewGuid().ToString();
-            this.client = client ?? clientFactory();
-            this.clientFactory = clientFactory;
-            this.wrappers = wrappers.ToArray();
-            this.protocol = protocol;
+        public PXSocketClient(string clientId, IResolverContext context, Func<IPXProtocol> protocolFactory) {
+            Id = clientId;
+
+            protocol = protocolFactory();
             protocol.Initialize(this);
 
             this.encoder = new PXMessageEncoder(context.Handlers().GetHandlableMessageTypes());
             this.context = context;
+
+            StartProtocolReading();
         }
 
-        public void Start() {
-            if (this.client == null) {
-                this.client = clientFactory();
-            }
+        public void SetupStream(Stream stream) {
+            this.stream = stream;
 
-            SetupProtocol();
+            switch (this.protocol.GetState()) {
+                case PXProtocolState.None:
+                case PXProtocolState.WaitingForConnection:
+                    exceptionFilter = new PXExceptionsFilterStream(this.stream);
+                    this.protocol.SetupStream(exceptionFilter);
+                    break;
+                default:
+                    throw new Exception("protocol wrong state to setup connection"); //TODO: make specific exception
+            }
+        }
+
+        public async void StartProtocolReading() {
+            await HandleProtocolExceptionsAction(async delegate {
+                await protocol.StartReading();
+            });
         }
 
         public void Stop() {
-            Close();
+            this.exceptionFilter.Dispose();
+            this.stream.Close();
+            this.protocol.Dispose();
+
+            ProcessClosingMessage();
+
+            this.OnDisposed?.Invoke(this);
+            this.OnDisposed = null;
         }
 
-        public void Send<M>(M message) where M : struct {
-            this.protocol.SendMessage(this.encoder.EncodeMessage(message));
+        public async Task Send<M>(M message) where M : struct {
+            await HandleProtocolExceptionsAction(async delegate {
+                await this.protocol.SendMessage(this.encoder.EncodeMessage(message));
+            });
         }
 
         public async Task<R> SendRequest<M, R>(M message) where M: struct where R: struct {
@@ -64,18 +86,16 @@ namespace Pixie.Core
             return (R)this.encoder.DecodeMessage(await this.protocol.SendRequestMessage(this.encoder.EncodeMessage(message)));
         }
 
-        private void SetupProtocol() {
-            this.protocol.SetupStream(WrapStream(client.GetStream(), this.wrappers));
-        }
-
-        private Stream WrapStream(Stream stream, IEnumerable<IPXStreamWrapper> wrappers) {
-            var result = stream;
-
-            foreach (var wrapper in wrappers) {
-                result = wrapper.Wrap(result);
+        private async Task HandleProtocolExceptionsAction(Func<Task> action) {
+            try {
+                await action();
+            } catch (PXConnectionClosedException) {
+                //do nothing
+            } catch (PXConnectionFinishedException) {
+                this.Stop();
+            } catch (Exception e) {
+                this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
             }
-
-            return result;
         }
 
         public void OnClientError(Exception e) {
@@ -97,12 +117,6 @@ namespace Pixie.Core
             }
         }
 
-        private void Close() {
-            this.client.Close();
-
-            ClientDisconnected();
-        }
-
         private void ExecuteInMessageScope(Action<IResolverContext> action) {
             using (var messageContext = this.context.OpenScope()) {
                 messageContext.Use<IPXClientService>(this);
@@ -119,18 +133,7 @@ namespace Pixie.Core
 
         //IPXProtocolFeedbackReceiver
 
-        public void RequestReconnect() {
-            if (clientFactory != null) {
-                client?.Close();
-                client = clientFactory();
-
-                SetupProtocol();
-            }
-        }
-
         public void ReceivedMessage(byte[] message) {
-            this.context.Logger().Debug(delegate { return $"Message received: {message}"; });
-
             try {
                 this.context.Handlers().HandleMessage(
                     encoder.DecodeMessage(message),
@@ -142,8 +145,6 @@ namespace Pixie.Core
         }
 
         public void ReceivedRequestMessage(ushort id, byte[] message) {
-            this.context.Logger().Debug(delegate { return $"Request message received: {message}"; });
-
             try {
                 this.protocol.SendResponse(id, this.encoder.EncodeMessage(
                     this.context.Handlers().HandleRequestMessage(
@@ -156,11 +157,10 @@ namespace Pixie.Core
             }
         }
 
-        public void ClientDisconnected() {
-            ProcessClosingMessage();
-
-            this.OnDisconnect?.Invoke(this);
-            this.OnDisconnect = null;
+        public void OnProtocolStateChanged() {
+            if (this.protocol.GetState() == PXProtocolState.WaitingForConnection) {
+                this.OnDisconnected?.Invoke(this);
+            }
         }
 
         /////////////////////////////

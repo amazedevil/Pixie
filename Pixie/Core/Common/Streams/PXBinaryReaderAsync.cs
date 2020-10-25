@@ -7,8 +7,6 @@ namespace Pixie.Core.Common.Streams
 {
     internal class PXBinaryReaderAsync
     {
-        public class EmptyStreamException : Exception {}
-
         private Stream innerStream;
 
         public PXBinaryReaderAsync(Stream innerStream) {
@@ -23,8 +21,20 @@ namespace Pixie.Core.Common.Streams
             return (await ReadBytes(sizeof(byte), cancellationToken))[0];
         }
 
+        public async Task<bool> ReadBool(CancellationToken? cancellationToken = null) {
+            return await this.ReadByte() != 0;
+        }
+
         public async Task<ushort> ReadUInt16(CancellationToken? cancellationToken = null) {
             return BitConverter.ToUInt16(await ReadBytes(sizeof(ushort), cancellationToken), 0);
+        }
+
+        public async Task<int> ReadInt32(CancellationToken? cancellationToken = null) {
+            return BitConverter.ToInt32(await ReadBytes(sizeof(int), cancellationToken), 0);
+        }
+
+        public async Task<Guid> ReadGuid(CancellationToken? cancellationToken = null) {
+            return new Guid(await ReadBytes(16, cancellationToken));
         }
 
         public async Task<byte[]> ReadBytes(int count, CancellationToken? cancellationToken = null) {
@@ -38,10 +48,6 @@ namespace Pixie.Core.Common.Streams
                     bytesRead = await this.innerStream.ReadAsync(buffer, readCount, count - readCount, cancellationToken.Value);
                 } else {
                     bytesRead = await this.innerStream.ReadAsync(buffer, readCount, count - readCount);
-                }
-
-                if (bytesRead == 0) {
-                    throw new EmptyStreamException();
                 }
 
                 readCount += bytesRead;

@@ -26,6 +26,7 @@ namespace Pixie.Core.Services
             internal string Address { get; private set; }
             internal int Port { get; private set; }
             internal int SenderId { get; private set; }
+            internal bool ReconnectAllowedValue { get; private set; }
 
             internal List<IPXStreamWrapper> StreamWrappers { get; private set; }
             internal Func<IPXProtocol> ProtocolProvider { get; private set; }
@@ -36,6 +37,7 @@ namespace Pixie.Core.Services
                 this.SenderId = PXSenderDispatcherService.DEFAULT_SERVER_SENDER_ID;
                 this.StreamWrappers = new List<IPXStreamWrapper>();
                 this.ProtocolProvider = delegate { return new PXReliableDeliveryProtocol(); };
+                this.ReconnectAllowedValue = false;
             }
 
             public SocketServer Sender(int id) {
@@ -50,6 +52,11 @@ namespace Pixie.Core.Services
 
             public SocketServer Protocol(Func<IPXProtocol> provider) {
                 this.ProtocolProvider = provider;
+                return this;
+            }
+
+            public SocketServer ReconnectAllowed(bool value) {
+                this.ReconnectAllowedValue = value;
                 return this;
             }
         }
@@ -109,7 +116,8 @@ namespace Pixie.Core.Services
                         this.container,
                         sockServ.SenderId, 
                         sockServ.StreamWrappers,
-                        sockServ.ProtocolProvider
+                        sockServ.ProtocolProvider,
+                        sockServ.ReconnectAllowedValue
                     );
                 case CliServer cliServ:
                     return new PXCliServer(

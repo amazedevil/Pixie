@@ -9,10 +9,16 @@ namespace Pixie.Core.Sockets
 
         void SetupStream(Stream stream);
 
-        void SendMessage(byte[] message);
+        Task StartReading();
 
-        void SendResponse(ushort id, byte[] response);
+        Task SendMessage(byte[] message);
+
+        Task SendResponse(ushort id, byte[] response);
 
         Task<byte[]> SendRequestMessage(byte[] message);
+
+        PXProtocolState GetState();
+
+        void Dispose();
     }
 }

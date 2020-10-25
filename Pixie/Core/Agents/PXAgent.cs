@@ -4,6 +4,7 @@ using Pixie.Core.Sockets;
 using Pixie.Core.StreamWrappers;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,16 +15,40 @@ namespace Pixie.Core.Agents
     {
         private PXSocketClient client;
 
-        public PXAgent(string address, int port, IResolverContext context, IEnumerable<IPXStreamWrapper> wrappers, IPXProtocol protocol, int senderId) {
+        public PXAgent(string address, int port, IResolverContext context, IEnumerable<IPXStreamWrapper> wrappers, Func<IPXProtocol> protocolProvider, int senderId) {
+            var clientId = Guid.NewGuid();
+
+            async void Connect() {
+                var stream = WrapStream(new TcpClient(address, port).GetStream(), wrappers);
+
+                await (new PXLLProtocol()).WelcomeFromSender(stream, clientId.ToString());
+
+                this.client.SetupStream(stream);
+            }
+            
             this.SenderId = senderId;
 
-            this.client = new PXSocketClient(null, context, wrappers, protocol, delegate {
-                return new TcpClient(address, port);
-            });
+            this.client = new PXSocketClient(clientId.ToString(), context, protocolProvider);
+            Connect();
+
+            this.client.OnDisconnected += aClient => {
+                Connect();
+            };
 
             context.SenderDispatcher().Register(this);
 
-            this.client.Start();
+            this.client.StartProtocolReading();
+        }
+
+        //TODO: remove duplication with PXSocketServer
+        private Stream WrapStream(Stream stream, IEnumerable<IPXStreamWrapper> wrappers) {
+            var result = stream;
+
+            foreach (var wrapper in wrappers) {
+                result = wrapper.Wrap(result);
+            }
+
+            return result;
         }
 
         public void Stop() {
@@ -38,16 +63,16 @@ namespace Pixie.Core.Agents
             return null;
         }
 
-        public void Send<M>(IEnumerable<string> clientIds, M data) where M : struct {
-            this.client.Send(data);
+        public async Task Send<M>(IEnumerable<string> clientIds, M data) where M : struct {
+            await this.client.Send(data);
         }
 
-        public void Send<M>(IEnumerable<string> clientIds, M data, int subscriptionId) where M : struct {
-            Send(clientIds, data);
+        public async Task Send<M>(IEnumerable<string> clientIds, M data, int subscriptionId) where M : struct {
+            await Send(clientIds, data);
         }
 
-        public Task<R> SendRequest<M, R>(string clientId, M data) where M : struct where R : struct {
-            return this.client.SendRequest<M, R>(data);
+        public async Task<R> SendRequest<M, R>(string clientId, M data) where M : struct where R : struct {
+            return await this.client.SendRequest<M, R>(data);
         }
 
         /////////////////////////

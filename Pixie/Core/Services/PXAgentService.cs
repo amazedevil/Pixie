@@ -73,9 +73,7 @@ namespace Pixie.Core.Services
         }
 
         public void BuildAndStartAgents() {
-            foreach (var desc in this.descriptions) {
-                BuildAndStartAgent(desc);
-            }
+            agents = this.descriptions.Select(d => BuildAndStartAgent(d)).ToList();
         }
 
         public void StopAgents() {
@@ -84,15 +82,15 @@ namespace Pixie.Core.Services
             }
         }
 
-        private void BuildAndStartAgent(Agent description) {
-            agents.Add(new PXAgent(
+        private PXAgent BuildAndStartAgent(Agent description) {
+            return new PXAgent(
                 description.Address,
                 description.Port,
                 this.container,
                 description.StreamWrappers,
-                description.ProtocolProvider(),
+                description.ProtocolProvider,
                 description.SenderId
-            ));
+            );
         }
 
         internal void CloseRegistration() {

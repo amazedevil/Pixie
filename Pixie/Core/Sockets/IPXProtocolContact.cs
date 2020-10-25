@@ -6,14 +6,10 @@ namespace Pixie.Core.Sockets
 {
     public interface IPXProtocolContact
     {
-        void RequestReconnect();
-
         void ReceivedMessage(byte[] message);
 
         void ReceivedRequestMessage(ushort id, byte[] message);
 
-        void ClientDisconnected();
-
-        void OnClientError(Exception e);
+        void OnProtocolStateChanged();
     }
 }

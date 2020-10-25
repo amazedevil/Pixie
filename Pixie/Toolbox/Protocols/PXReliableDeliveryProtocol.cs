@@ -70,10 +70,8 @@ namespace Pixie.Toolbox.Protocols
         private class MessageTimeoutException : Exception {
         }
 
-        private class ConnectionErrorException : Exception {
-        }
-
         private IPXProtocolContact contact;
+        private PXProtocolState state = PXProtocolState.None;
 
         private IDictionary<ushort, MessageData> messages = new ConcurrentDictionary<ushort, MessageData>();
         private IDictionary<ushort, MessageProcessedData> processing = new ConcurrentDictionary<ushort, MessageProcessedData>();
@@ -81,8 +79,6 @@ namespace Pixie.Toolbox.Protocols
         private const byte MESSAGE_TYPE_DATA = 1;
         private const byte MESSAGE_TYPE_ACK = 2;
         private const byte MESSAGE_TYPE_RESPONSE = 3;
-
-        private const int MESSAGE_ACK_TIMEOUT = 5 * 1000;
 
         private const byte FLAG_REQUEST = 1;
 
@@ -97,85 +93,49 @@ namespace Pixie.Toolbox.Protocols
         }
 
         public void SetupStream(Stream stream) {
-            foreach (var message in messages) {
-                _ = SendMessageInternal(message.Value);
-            }
-
+            state = PXProtocolState.Working;
             streamReadyTaskSource.SetResult(stream);
-
-            ReadMessages();
         }
 
         public async Task<byte[]> SendRequestMessage(byte[] message) {
             return await messages[await SendMessageInternal(message, true)].responseWaiter.Task;
         }
 
-        private async void ReadMessages() {
-            try {
-                await TransformNetworkExceptions(async delegate {
-                    try {
-                        while (true) {
-                            var reader = new PXBinaryReaderAsync(await streamReadyTaskSource.Task);
+        public async Task StartReading() {
+            while (true) {
+                try {
+                    var reader = new PXBinaryReaderAsync(await streamReadyTaskSource.Task);
 
-                            var cts = new CancellationTokenSource();
-                            cts.CancelAfter(MESSAGE_ACK_TIMEOUT);
+                    switch (await reader.ReadByte()) {
+                        case MESSAGE_TYPE_DATA: {
+                                ushort id = await reader.ReadUInt16();
+                                byte flags = await reader.ReadByte();
+                                int length = await reader.ReadInt32();
 
-                            try {
-                                switch (await reader.ReadByte(cts.Token)) {
-                                    case MESSAGE_TYPE_DATA: {
-                                            ushort id = await reader.ReadUInt16();
-                                            byte flags = await reader.ReadByte();
-                                            short length = await reader.ReadInt16();
-
-                                            OnMessageReceived(
-                                                id,
-                                                (flags & FLAG_REQUEST) != 0,
-                                                await reader.ReadBytes(length)
-                                            );
-                                        }
-                                        break;
-                                    case MESSAGE_TYPE_ACK:
-                                        OnAcknowledgementReceived(await reader.ReadUInt16());
-                                        break;
-                                    case MESSAGE_TYPE_RESPONSE: {
-                                            ushort id = await reader.ReadUInt16();
-                                            short length = await reader.ReadInt16();
-
-                                            OnResponseReceived(id, await reader.ReadBytes(length));
-                                        }
-                                        break;
-                                }
-
-                                CheckMessagesTimeout();
-                            } catch (OperationCanceledException) {
-                                CheckMessagesTimeout();
+                                await OnMessageReceived(
+                                    id,
+                                    (flags & FLAG_REQUEST) != 0,
+                                    await reader.ReadBytes(length)
+                                );
                             }
+                            break;
+                        case MESSAGE_TYPE_ACK:
+                            OnAcknowledgementReceived(await reader.ReadUInt16());
+                            break;
+                        case MESSAGE_TYPE_RESPONSE: {
+                                ushort id = await reader.ReadUInt16();
+                                int length = await reader.ReadInt32();
 
-                            RemoveOutdatedProcessing();
-                        }
-                    } catch (MessageTimeoutException) {
-                        //possibly connection lost
-                        throw new PXConnectionLostException();
+                                OnResponseReceived(id, await reader.ReadBytes(length));
+                            }
+                            break;
                     }
-                });
-            } catch (PXConnectionLostException) {
-                OnConnectionLost(); //when we reconnect, we'll send message one more time
-            } catch (PXConnectionClosedException) {
-                OnConnectionClosed();
-            } catch (Exception e) {
-                this.contact.OnClientError(e);
+                } catch (PXConnectionLostException) {
+                    ReportOnConnectionLost();
+                }
+
+                RemoveOutdatedProcessing();
             }
-        }
-
-        private void OnConnectionLost() {
-            this.streamReadyTaskSource.Task.GetAwaiter().GetResult().Close();
-            this.streamReadyTaskSource = new TaskCompletionSource<Stream>();
-
-            contact.RequestReconnect();
-        }
-
-        private void OnConnectionClosed() {
-            contact.ClientDisconnected();
         }
 
         private void RemoveOutdatedProcessing() {
@@ -184,20 +144,12 @@ namespace Pixie.Toolbox.Protocols
             processing = processing.Where(p => p.Value.time.Subtract(currentTime) < timeDelta).ToDictionary(v => v.Key, v => v.Value);
         }
 
-        private void CheckMessagesTimeout() {
-            foreach (var message in messages) {
-                if (DateTime.Now.Subtract(message.Value.time).TotalMilliseconds > MESSAGE_ACK_TIMEOUT) {
-                    throw new MessageTimeoutException();
-                }
-            }
-        }
-
-        private void OnMessageReceived(ushort id, bool isRequest, byte[] data) {
+        private async Task OnMessageReceived(ushort id, bool isRequest, byte[] data) {
             if (this.processing.ContainsKey(id)) { //duplicate message
                 if (this.processing[id].responseData != null) {
-                    SendResponse(id, this.processing[id].responseData);
+                    await SendResponse(id, this.processing[id].responseData);
                 } else {
-                    SendAckMessage(id);
+                    await SendAckMessage(id);
                 }
 
                 return;
@@ -211,7 +163,7 @@ namespace Pixie.Toolbox.Protocols
             };
 
             if (!isRequest) {
-                SendAckMessage(id);
+                await SendAckMessage(id);
                 this.contact.ReceivedMessage(data);
             } else {
                 this.contact.ReceivedRequestMessage(id, data);
@@ -237,44 +189,52 @@ namespace Pixie.Toolbox.Protocols
             message.responseWaiter.SetResult(data);
         }
 
-        public void SendMessage(byte[] message) {
-            _ = SendMessageInternal(message, false);
+        public async Task SendMessage(byte[] message) {
+            await SendMessageInternal(message, false);
         }
 
         private async Task<ushort> SendMessageInternal(MessageData message) {
             try {
-                await TransformNetworkExceptions(async delegate {
-                    var writer = new PXBinaryWriterAsync(await streamReadyTaskSource.Task);
-                    writer.Write(MESSAGE_TYPE_DATA);
-                    writer.Write(message.id);
-                    writer.Write(message.responseWaiter != null ? FLAG_REQUEST : (byte)0);
-                    writer.Write((short)message.data.Length);
-                    writer.Write(message.data);
-                    await writer.FlushAsync();
-                });
-            } catch (ConnectionErrorException) {
-                OnConnectionLost(); //when we reconnect, we'll send message again
-            } catch (Exception e) {
-                this.contact.OnClientError(e);
+                var writer = new PXBinaryWriterAsync(await streamReadyTaskSource.Task);
+                writer.Write(MESSAGE_TYPE_DATA);
+                writer.Write(message.id);
+                writer.Write(message.responseWaiter != null ? FLAG_REQUEST : (byte)0);
+                writer.Write(message.data.Length);
+                writer.Write(message.data);
+                await writer.FlushAsync();
+            } catch (PXConnectionLostException) {
+                ReportOnConnectionLost();
+
+                await SendMessageInternal(message);
             }
 
             return message.id;
         }
 
-        public async void SendResponse(ushort messageId, byte[] response) {
+        public async Task SendResponse(ushort messageId, byte[] response) {
             this.processing[messageId].UpdateResponse(response);
 
             try {
-                await TransformNetworkExceptions(async delegate {
-                    var writer = new PXBinaryWriterAsync(await streamReadyTaskSource.Task);
-                    writer.Write(MESSAGE_TYPE_RESPONSE);
-                    writer.Write(messageId);
-                    writer.Write((short)response.Length);
-                    writer.Write(response);
-                    await writer.FlushAsync();
-                });
-            } catch (ConnectionErrorException) {
-                OnConnectionLost(); //when we reconnect, we'll send message again
+                var writer = new PXBinaryWriterAsync(await streamReadyTaskSource.Task);
+                writer.Write(MESSAGE_TYPE_RESPONSE);
+                writer.Write(messageId);
+                writer.Write(response.Length);
+                writer.Write(response);
+                await writer.FlushAsync();
+            } catch (PXConnectionLostException) {
+                ReportOnConnectionLost();
+
+                await SendResponse(messageId, response);
+            }
+        }
+
+        public PXProtocolState GetState() {
+            return state;
+        }
+
+        public void Dispose() {
+            if (!this.streamReadyTaskSource.Task.IsCompleted) {
+                this.streamReadyTaskSource.SetException(new PXConnectionClosedException());
             }
         }
 
@@ -293,35 +253,24 @@ namespace Pixie.Toolbox.Protocols
             return await SendMessageInternal(messageObj);
         }
 
-        private async void SendAckMessage(ushort id) {
+        private async Task SendAckMessage(ushort id) {
             this.processing[id].UpdateResponse(null);
 
             try {
-                await TransformNetworkExceptions(async delegate {
-                    var writer = new PXBinaryWriterAsync(await this.streamReadyTaskSource.Task);
-                    writer.Write(MESSAGE_TYPE_ACK);
-                    writer.Write(id);
-                    await writer.FlushAsync();
-                });
-            } catch (ConnectionErrorException) {
-                OnConnectionLost(); //when we reconnect, we'll send message again
+                var writer = new PXBinaryWriterAsync(await this.streamReadyTaskSource.Task);
+                writer.Write(MESSAGE_TYPE_ACK);
+                writer.Write(id);
+                await writer.FlushAsync();
+            } catch (PXConnectionLostException) {
+                ReportOnConnectionLost();
+
+                await SendAckMessage(id);
             }
         }
 
-        private async Task TransformNetworkExceptions(Func<Task> action) {
-            try {
-                await action();
-            } catch (PXBinaryReaderAsync.EmptyStreamException) {
-                //seems like connection is closed
-                throw new PXConnectionClosedException();
-            } catch (ObjectDisposedException) {
-                //network stream seems to be closed, so we get this error,
-                //we excpect it, so do nothing
-                throw new PXConnectionLostException();
-            } catch (IOException) {
-                //that happens sometimes, if user closes connection
-                throw new PXConnectionLostException();
-            }
+        private void ReportOnConnectionLost() {
+            state = PXProtocolState.WaitingForConnection;
+            contact.OnProtocolStateChanged();
         }
     }
 }
