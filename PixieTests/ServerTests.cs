@@ -91,7 +91,10 @@ namespace PixieTests
             server.StartAsync();
             var client = TestClient.Builder.Create("127.0.0.1", port).Build();
 
-            client.Run();
+            //we need to wait for connection
+            //to initialize before it can be 
+            //stopped and get message
+            client.Run().Wait();
             client.Stop();
 
             if (!dataReceivedEvent.WaitOne(5000)) {
@@ -265,7 +268,7 @@ namespace PixieTests
             }).Build();
 
             server.StartAsync();
-            client.Run();
+            _ = client.Run();
 
             Assert.AreEqual(
                 serverToClientResponse, 

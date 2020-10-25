@@ -84,7 +84,7 @@ namespace PixieTests.Common
             TestClient client = clientBuilder.Build();
 
             server.StartAsync();
-            client.Run();
+            _ = client.Run();
 
             client.SendMessage(clientToServerMessage);
 

@@ -58,6 +58,9 @@ namespace PixieCoreTests.Client
         private int port;
         private Action<object> onMessageRecived;
         private Func<object, object> onMessageRequestReceived;
+        private PXLLProtocol pllpProtocol = new PXLLProtocol();
+
+        public string ClientId { get; private set; } = null;
 
         public TestClient(
             string host, 
@@ -76,14 +79,18 @@ namespace PixieCoreTests.Client
             this.onMessageRequestReceived = onMessageRequestRecived;
             this.protocol = protocol ?? new PXReliableDeliveryProtocol();
             this.protocol.Initialize(this);
+            this.protocol.StartReading();
         }
 
-        public void Run() {
+        public async Task Run() {
             try {
                 connection = new TcpClient(this.host, this.port);
                 encoder = new PXMessageEncoder(eventTypes);
+                var stream = WrapSslIfNeeded(connection.GetStream());
 
-                protocol.SetupStream(WrapSslIfNeeded(connection.GetStream()));
+                ClientId = await pllpProtocol.WelcomeFromSender(stream, ClientId);
+
+                protocol.SetupStream(stream);
             } catch (Exception e) {
                 Dismiss();
                 throw e;
@@ -143,10 +150,6 @@ namespace PixieCoreTests.Client
             return (R)this.encoder.DecodeMessage(await this.protocol.SendRequestMessage(this.encoder.EncodeMessage(message)));
         }
 
-        public void RequestReconnect() {
-            //Not supposed to be used
-        }
-
         public void ReceivedMessage(byte[] message) {
             this.onMessageRecived(this.encoder.DecodeMessage(message));
         }
@@ -157,12 +160,8 @@ namespace PixieCoreTests.Client
             ));
         }
 
-        public void ClientDisconnected() {
-            Console.WriteLine("Test client disconnected");
-        }
-
-        public void OnClientError(Exception e) {
-            throw e;
+        public void OnProtocolStateChanged() {
+            //do nothing
         }
     }
 }
