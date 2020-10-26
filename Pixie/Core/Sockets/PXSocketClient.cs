@@ -81,14 +81,23 @@ namespace Pixie.Core
 
         public async Task Send<M>(M message) where M : struct {
             await HandleProtocolExceptionsAction(async delegate {
-                await this.protocol.SendMessage(this.encoder.EncodeMessage(message));
+                await this.protocol.SendMessage(LogData(
+                    this.encoder.EncodeMessage(message), 
+                    "Sending message: {0}"
+                ));
             });
         }
 
         public async Task<R> SendRequest<M, R>(M message) where M: struct where R: struct {
             this.encoder.RegisterMessageTypeIfNotRegistered(typeof(R));
 
-            return (R)this.encoder.DecodeMessage(await this.protocol.SendRequestMessage(this.encoder.EncodeMessage(message)));
+            return (R)this.encoder.DecodeMessage(LogData(
+                await this.protocol.SendRequestMessage(LogData(
+                    this.encoder.EncodeMessage(message), 
+                    "Sending request message: {0}"
+                )),
+                "Received request response: {0}"
+            ));
         }
 
         private async Task HandleProtocolExceptionsAction(Func<Task> action) {
@@ -136,12 +145,18 @@ namespace Pixie.Core
             });
         }
 
+        private byte[] LogData(byte[] data, string message) {
+            this.context.Logger().Debug(delegate { return string.Format(message, Encoding.UTF8.GetString(data)); });
+
+            return data;
+        }
+
         //IPXProtocolFeedbackReceiver
 
         public void ReceivedMessage(byte[] message) {
             try {
                 this.context.Handlers().HandleMessage(
-                    encoder.DecodeMessage(message),
+                    encoder.DecodeMessage(LogData(message, "Message received: {0}")),
                     this.MessageContextProvider
                 );
             } catch (Exception e) {
@@ -151,11 +166,16 @@ namespace Pixie.Core
 
         public void ReceivedRequestMessage(ushort id, byte[] message) {
             try {
-                this.protocol.SendResponse(id, this.encoder.EncodeMessage(
-                    this.context.Handlers().HandleRequestMessage(
-                        encoder.DecodeMessage(message),
+                this.protocol.SendResponse(id, LogData(
+                    this.encoder.EncodeMessage(
+                        this.context.Handlers().HandleRequestMessage(
+                        encoder.DecodeMessage(LogData(
+                            message, 
+                            "Request message received: {0}"
+                        )),
                         this.MessageContextProvider
-                    )
+                    )),
+                    "Sending request response: {0}"
                 ));
             } catch (Exception e) {
                 this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
