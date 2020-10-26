@@ -233,8 +233,10 @@ namespace Pixie.Toolbox.Protocols
         }
 
         public void Dispose() {
+            this.contact = null;
+
             if (!this.streamReadyTaskSource.Task.IsCompleted) {
-                this.streamReadyTaskSource.SetException(new PXConnectionClosedException());
+                this.streamReadyTaskSource.SetException(new PXConnectionClosedLocalException());
             }
         }
 
@@ -269,8 +271,15 @@ namespace Pixie.Toolbox.Protocols
         }
 
         private void ReportOnConnectionLost() {
-            state = PXProtocolState.WaitingForConnection;
-            contact.OnProtocolStateChanged();
+            lock (this) {
+                if (state == PXProtocolState.WaitingForConnection) {
+                    return;
+                }
+
+                this.streamReadyTaskSource = new TaskCompletionSource<Stream>();
+                state = PXProtocolState.WaitingForConnection;
+                Task.Run(delegate { contact.OnProtocolStateChanged(); });
+            }
         }
     }
 }

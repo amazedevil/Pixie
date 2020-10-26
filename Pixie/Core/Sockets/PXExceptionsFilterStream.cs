@@ -22,14 +22,9 @@ namespace Pixie.Core.Sockets
         public override long Position { get => innerStream.Position; set => innerStream.Position = value; }
 
         private Stream innerStream;
-        private bool isClosed = false;
 
         public PXExceptionsFilterStream(Stream innerStream) {
             this.innerStream = innerStream;
-        }
-
-        protected override void Dispose(bool disposing) {
-            isClosed = true;
         }
 
         public override void Flush() {
@@ -49,7 +44,7 @@ namespace Pixie.Core.Sockets
                 var bytesRead = await innerStream.ReadAsync(buffer, offset, count, cancellationToken);
 
                 if (bytesRead == 0) {
-                    throw new PXConnectionFinishedException();
+                    throw new PXConnectionClosedRemoteException();
                 }
 
                 return bytesRead;
@@ -85,10 +80,6 @@ namespace Pixie.Core.Sockets
         }
 
         private async Task WrapStreamActionOperation(Func<Task> action) {
-            if (isClosed) {
-                throw new PXConnectionClosedException();
-            }
-
             try {
                 await action();
             } catch (ObjectDisposedException) {
@@ -102,11 +93,7 @@ namespace Pixie.Core.Sockets
         }
 
         private void ThrowLostOrClosed() {
-            if (isClosed) {
-                throw new PXConnectionClosedException();
-            } else {
-                throw new PXConnectionLostException();
-            }
+            throw new PXConnectionLostException();
         }
     }
 }

@@ -23,10 +23,10 @@ namespace Pixie.Core
 
         private PXMessageEncoder encoder;
         private IPXProtocol protocol;
-
         private Stream stream;
         private IResolverContext context;
-        private PXExceptionsFilterStream exceptionFilter;
+
+        private Func<IPXProtocol> protocolFactory;
 
         public event Action<PXSocketClient> OnDisposed;
         public event Action<PXSocketClient> OnDisconnected;
@@ -34,8 +34,9 @@ namespace Pixie.Core
         public PXSocketClient(string clientId, IResolverContext context, Func<IPXProtocol> protocolFactory) {
             Id = clientId;
 
-            protocol = protocolFactory();
-            protocol.Initialize(this);
+            this.protocolFactory = protocolFactory;
+
+            ResetProtocol();
 
             this.encoder = new PXMessageEncoder(context.Handlers().GetHandlableMessageTypes());
             this.context = context;
@@ -44,13 +45,10 @@ namespace Pixie.Core
         }
 
         public void SetupStream(Stream stream) {
-            this.stream = stream;
-
             switch (this.protocol.GetState()) {
                 case PXProtocolState.None:
                 case PXProtocolState.WaitingForConnection:
-                    exceptionFilter = new PXExceptionsFilterStream(this.stream);
-                    this.protocol.SetupStream(exceptionFilter);
+                    this.protocol.SetupStream(new PXExceptionsFilterStream(this.stream = stream));
                     break;
                 default:
                     throw new Exception("protocol wrong state to setup connection"); //TODO: make specific exception
@@ -64,14 +62,21 @@ namespace Pixie.Core
         }
 
         public void Stop() {
-            this.exceptionFilter.Dispose();
             this.stream.Close();
-            this.protocol.Dispose();
+            this.stream = null;
+
+            ResetProtocol();
 
             ProcessClosingMessage();
 
             this.OnDisposed?.Invoke(this);
             this.OnDisposed = null;
+        }
+
+        private void ResetProtocol() {
+            this.protocol?.Dispose();
+            this.protocol = protocolFactory();
+            this.protocol.Initialize(this);
         }
 
         public async Task Send<M>(M message) where M : struct {
@@ -89,10 +94,10 @@ namespace Pixie.Core
         private async Task HandleProtocolExceptionsAction(Func<Task> action) {
             try {
                 await action();
-            } catch (PXConnectionClosedException) {
+            } catch (PXConnectionClosedLocalException) {
                 //do nothing
-            } catch (PXConnectionFinishedException) {
-                this.Stop();
+            } catch (PXConnectionClosedRemoteException) {
+                this.Stop(); //if connection was closed by remote, closing it locally
             } catch (Exception e) {
                 this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
             }
