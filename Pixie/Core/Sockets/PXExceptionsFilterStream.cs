@@ -83,17 +83,10 @@ namespace Pixie.Core.Sockets
             try {
                 await action();
             } catch (ObjectDisposedException) {
-                //network stream seems to be closed, so we get this error,
-                //we excpect it, so do nothing
-                ThrowLostOrClosed();
+                throw new PXConnectionClosedLocalException();
             } catch (IOException) {
-                //that happens sometimes, if user closes connection
-                ThrowLostOrClosed();
+                throw new PXConnectionLostException();
             }
-        }
-
-        private void ThrowLostOrClosed() {
-            throw new PXConnectionLostException();
         }
     }
 }

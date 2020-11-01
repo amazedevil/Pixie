@@ -36,8 +36,6 @@ namespace Pixie.Core.Agents
             };
 
             context.SenderDispatcher().Register(this);
-
-            this.client.StartProtocolReading();
         }
 
         //TODO: remove duplication with PXSocketServer

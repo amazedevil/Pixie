@@ -36,12 +36,10 @@ namespace Pixie.Core
 
             this.protocolFactory = protocolFactory;
 
-            ResetProtocol();
-
             this.encoder = new PXMessageEncoder(context.Handlers().GetHandlableMessageTypes());
             this.context = context;
 
-            StartProtocolReading();
+            ResetProtocol();
         }
 
         public void SetupStream(Stream stream) {
@@ -55,13 +53,11 @@ namespace Pixie.Core
             }
         }
 
-        public async void StartProtocolReading() {
-            await HandleProtocolExceptionsAction(async delegate {
-                await protocol.StartReading();
-            });
-        }
-
         public void Stop() {
+            if (this.stream == null) {
+                return;
+            }
+
             this.stream.Close();
             this.stream = null;
 
@@ -77,6 +73,14 @@ namespace Pixie.Core
             this.protocol?.Dispose();
             this.protocol = protocolFactory();
             this.protocol.Initialize(this);
+
+            async void StartProtocolReading() {
+                await HandleProtocolExceptionsAction(async delegate {
+                    await protocol.StartReading();
+                });
+            }
+
+            StartProtocolReading();
         }
 
         public async Task Send<M>(M message) where M : struct {
@@ -91,24 +95,40 @@ namespace Pixie.Core
         public async Task<R> SendRequest<M, R>(M message) where M: struct where R: struct {
             this.encoder.RegisterMessageTypeIfNotRegistered(typeof(R));
 
-            return (R)this.encoder.DecodeMessage(LogData(
-                await this.protocol.SendRequestMessage(LogData(
-                    this.encoder.EncodeMessage(message), 
-                    "Sending request message: {0}"
-                )),
-                "Received request response: {0}"
-            ));
+            R result = default;
+
+            await HandleProtocolExceptionsAction(async delegate {
+                result = (R)this.encoder.DecodeMessage(LogData(
+                    await this.protocol.SendRequestMessage(LogData(
+                        this.encoder.EncodeMessage(message),
+                        "Sending request message: {0}"
+                    )),
+                    "Received request response: {0}"
+                ));
+            }, true);
+
+            return result;
         }
 
-        private async Task HandleProtocolExceptionsAction(Func<Task> action) {
+        private async Task HandleProtocolExceptionsAction(Func<Task> action, bool rethrow = false) {
             try {
                 await action();
             } catch (PXConnectionClosedLocalException) {
-                //do nothing
+                if (rethrow) {
+                    throw;
+                }
             } catch (PXConnectionClosedRemoteException) {
                 this.Stop(); //if connection was closed by remote, closing it locally
+
+                if (rethrow) {
+                    throw;
+                }
             } catch (Exception e) {
                 this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
+
+                if (rethrow) {
+                    throw;
+                }
             }
         }
 
