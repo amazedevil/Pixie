@@ -127,7 +127,7 @@ namespace Pixie.Core
                 this.context.Errors().Handle(e, PXErrorHandlingService.Scope.SocketClientMessage);
 
                 if (rethrow) {
-                    throw;
+                    throw new PXConnectionUnknownErrorException(e);
                 }
             }
         }
