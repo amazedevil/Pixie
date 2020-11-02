@@ -1,11 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.IO;
 
 namespace Pixie.Core.Exceptions
 {
     public class PXConnectionLostException : Exception
     {
-        public PXConnectionLostException() : base("Connection lost") { }
+        public Stream ConnectionStream { get; private set; }
+
+        public PXConnectionLostException(Stream s) : base("Connection lost") {
+            ConnectionStream = s;
+        }
     }
 }

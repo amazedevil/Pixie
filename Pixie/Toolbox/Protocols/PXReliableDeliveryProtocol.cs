@@ -93,8 +93,10 @@ namespace Pixie.Toolbox.Protocols
         }
 
         public void SetupStream(Stream stream) {
-            state = PXProtocolState.Working;
-            streamReadyTaskSource.SetResult(stream);
+            lock (this) {
+                state = PXProtocolState.Working;
+                streamReadyTaskSource.SetResult(stream);
+            }
         }
 
         public async Task<byte[]> SendRequestMessage(byte[] message) {
@@ -130,8 +132,8 @@ namespace Pixie.Toolbox.Protocols
                             }
                             break;
                     }
-                } catch (PXConnectionLostException) {
-                    ReportOnConnectionLost();
+                } catch (PXConnectionLostException e) {
+                    ReportOnConnectionLost(e.ConnectionStream);
                 }
 
                 RemoveOutdatedProcessing();
@@ -202,8 +204,8 @@ namespace Pixie.Toolbox.Protocols
                 writer.Write(message.data.Length);
                 writer.Write(message.data);
                 await writer.FlushAsync();
-            } catch (PXConnectionLostException) {
-                ReportOnConnectionLost();
+            } catch (PXConnectionLostException e) {
+                ReportOnConnectionLost(e.ConnectionStream);
 
                 await SendMessageInternal(message);
             }
@@ -221,8 +223,8 @@ namespace Pixie.Toolbox.Protocols
                 writer.Write(response.Length);
                 writer.Write(response);
                 await writer.FlushAsync();
-            } catch (PXConnectionLostException) {
-                ReportOnConnectionLost();
+            } catch (PXConnectionLostException e) {
+                ReportOnConnectionLost(e.ConnectionStream);
 
                 await SendResponse(messageId, response);
             }
@@ -263,16 +265,24 @@ namespace Pixie.Toolbox.Protocols
                 writer.Write(MESSAGE_TYPE_ACK);
                 writer.Write(id);
                 await writer.FlushAsync();
-            } catch (PXConnectionLostException) {
-                ReportOnConnectionLost();
+            } catch (PXConnectionLostException e) {
+                ReportOnConnectionLost(e.ConnectionStream);
 
                 await SendAckMessage(id);
             }
         }
 
-        private void ReportOnConnectionLost() {
+        private void ReportOnConnectionLost(Stream connectionStream) {
             lock (this) {
                 if (state == PXProtocolState.WaitingForConnection) {
+                    return;
+                }
+
+                if (!this.streamReadyTaskSource.Task.IsCompleted) {
+                    this.streamReadyTaskSource.SetException(new PXConnectionLostException(connectionStream));
+                } else if (!ReferenceEquals(this.streamReadyTaskSource.Task.Result, connectionStream)) {
+                    //possibly it's some new stream, so
+                    //don't wait for new connection, just try with current
                     return;
                 }
 

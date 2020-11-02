@@ -85,7 +85,7 @@ namespace Pixie.Core.Sockets
             } catch (ObjectDisposedException) {
                 throw new PXConnectionClosedLocalException();
             } catch (IOException) {
-                throw new PXConnectionLostException();
+                throw new PXConnectionLostException(this);
             }
         }
     }
