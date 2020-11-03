@@ -23,6 +23,8 @@ namespace Pixie.Core.Sockets
 
         public async Task<string> WelcomeFromReceiver(Stream stream) {
             try {
+                stream = new PXExceptionsFilterStream(stream);
+
                 var reader = new PXBinaryReaderAsync(stream);
                 var writer = new PXBinaryWriterAsync(stream);
 
@@ -54,6 +56,8 @@ namespace Pixie.Core.Sockets
 
         public async Task<string> WelcomeFromSender(Stream stream, string reconnectingClientId) {
             try {
+                stream = new PXExceptionsFilterStream(stream);
+
                 var reader = new PXBinaryReaderAsync(stream);
                 var writer = new PXBinaryWriterAsync(stream);
 
