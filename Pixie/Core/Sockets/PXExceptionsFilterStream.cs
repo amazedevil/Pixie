@@ -11,6 +11,12 @@ namespace Pixie.Core.Sockets
 {
     internal class PXExceptionsFilterStream : Stream
     {
+        private enum InternalState
+        {
+            Normal,
+            Error
+        }
+
         public override bool CanRead => innerStream.CanRead;
 
         public override bool CanSeek => innerStream.CanSeek;
@@ -22,9 +28,14 @@ namespace Pixie.Core.Sockets
         public override long Position { get => innerStream.Position; set => innerStream.Position = value; }
 
         private Stream innerStream;
+        private volatile InternalState internalState = InternalState.Normal;
 
         public PXExceptionsFilterStream(Stream innerStream) {
             this.innerStream = innerStream;
+        }
+
+        public override void Close() {
+            this.innerStream.Close();
         }
 
         public override void Flush() {
@@ -69,6 +80,10 @@ namespace Pixie.Core.Sockets
             });
         }
 
+        public void SwitchToErrorState() {
+            internalState = InternalState.Error;
+        }
+
         private async Task<T> WrapStreamFuncOperation<T>(Func<Task<T>> func) {
             T result = default;         
             
@@ -83,7 +98,12 @@ namespace Pixie.Core.Sockets
             try {
                 await action();
             } catch (ObjectDisposedException) {
-                throw new PXConnectionClosedLocalException();
+                switch (internalState) {
+                    case InternalState.Normal:
+                        throw new PXConnectionClosedLocalException();
+                    case InternalState.Error:
+                        throw new PXConnectionLostException(this);
+                }
             } catch (IOException) {
                 throw new PXConnectionLostException(this);
             }

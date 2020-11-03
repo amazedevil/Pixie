@@ -23,7 +23,7 @@ namespace Pixie.Core
 
         private PXMessageEncoder encoder;
         private IPXProtocol protocol;
-        private Stream stream;
+        private PXExceptionsFilterStream exceptionsStream;
         private IResolverContext context;
 
         private Func<IPXProtocol> protocolFactory;
@@ -38,15 +38,26 @@ namespace Pixie.Core
 
             this.encoder = new PXMessageEncoder(context.Handlers().GetHandlableMessageTypes());
             this.context = context;
-
-            ResetProtocol();
         }
 
         public void SetupStream(Stream stream) {
+            if (this.protocol == null) {
+                this.protocol = protocolFactory();
+                this.protocol.Initialize(this);
+
+                async void StartProtocolReading() {
+                    await HandleProtocolExceptionsAction(async delegate {
+                        await protocol.StartReading();
+                    });
+                }
+
+                StartProtocolReading();
+            }
+
             switch (this.protocol.GetState()) {
                 case PXProtocolState.None:
                 case PXProtocolState.WaitingForConnection:
-                    this.protocol.SetupStream(new PXExceptionsFilterStream(this.stream = stream));
+                    this.protocol.SetupStream(exceptionsStream = new PXExceptionsFilterStream(stream));
                     break;
                 default:
                     throw new Exception("protocol wrong state to setup connection"); //TODO: make specific exception
@@ -54,14 +65,14 @@ namespace Pixie.Core
         }
 
         public void Stop() {
-            if (this.stream == null) {
+            if (this.exceptionsStream == null) {
                 return;
             }
 
-            this.stream.Close();
-            this.stream = null;
-
             ResetProtocol();
+
+            this.exceptionsStream.Close();
+            this.exceptionsStream = null;
 
             ProcessClosingMessage();
 
@@ -71,16 +82,7 @@ namespace Pixie.Core
 
         private void ResetProtocol() {
             this.protocol?.Dispose();
-            this.protocol = protocolFactory();
-            this.protocol.Initialize(this);
-
-            async void StartProtocolReading() {
-                await HandleProtocolExceptionsAction(async delegate {
-                    await protocol.StartReading();
-                });
-            }
-
-            StartProtocolReading();
+            this.protocol = null;
         }
 
         public async Task Send<M>(M message) where M : struct {
@@ -204,6 +206,8 @@ namespace Pixie.Core
 
         public void OnProtocolStateChanged() {
             if (this.protocol.GetState() == PXProtocolState.WaitingForConnection) {
+                this.exceptionsStream.SwitchToErrorState();
+
                 this.OnDisconnected?.Invoke(this);
             }
         }
