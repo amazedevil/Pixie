@@ -49,6 +49,8 @@ namespace Pixie.Core.Sockets
                 }
 
                 return id.ToString();
+            } catch (PLLPVersionIncorrectException) {
+                throw;
             } catch (Exception e) {
                 throw new PLLPUknownException(e);
             }
@@ -78,6 +80,8 @@ namespace Pixie.Core.Sockets
                     await writer.FlushAsync();
                     return (await reader.ReadGuid()).ToString();
                 }
+            } catch (PLLPVersionIncorrectException) {
+                throw;
             } catch (Exception e) {
                 throw new PLLPUknownException(e);
             }
