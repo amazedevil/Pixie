@@ -235,10 +235,13 @@ namespace Pixie.Toolbox.Protocols
         }
 
         public void Dispose() {
-            this.contact = null;
+            lock (this) {
+                state = PXProtocolState.Disposed;
+                this.contact = null;
 
-            if (!this.streamReadyTaskSource.Task.IsCompleted) {
-                this.streamReadyTaskSource.SetException(new PXConnectionClosedLocalException());
+                if (!this.streamReadyTaskSource.Task.IsCompleted) {
+                    this.streamReadyTaskSource.SetException(new PXConnectionClosedLocalException());
+                }
             }
         }
 
