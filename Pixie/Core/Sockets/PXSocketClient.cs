@@ -19,6 +19,12 @@ namespace Pixie.Core
 {
     internal class PXSocketClient : IPXClientService, IPXProtocolContact
     {
+        public class StreamSetupInWrongProtocolStateException : Exception
+        {
+            public StreamSetupInWrongProtocolStateException(PXProtocolState currentState) 
+                : base($"Protocol wrong state ({currentState}) to setup connection stream") {}
+        }
+
         public string Id { get; private set; }
 
         private PXMessageEncoder encoder;
@@ -27,6 +33,8 @@ namespace Pixie.Core
         private IResolverContext context;
 
         private Func<IPXProtocol> protocolFactory;
+
+        private object protocolOperationsLock = new object();
 
         public event Action<PXSocketClient> OnDisposed;
         public event Action<PXSocketClient> OnDisconnected;
@@ -41,48 +49,56 @@ namespace Pixie.Core
         }
 
         public void SetupStream(Stream stream) {
-            if (this.protocol == null) {
-                this.protocol = protocolFactory();
-                this.protocol.Initialize(this);
+            lock (protocolOperationsLock) {
+                if (this.protocol == null) {
+                    this.protocol = protocolFactory();
+                    this.protocol.Initialize(this);
 
-                async void StartProtocolReading() {
-                    await HandleProtocolExceptionsAction(async delegate {
-                        await protocol.StartReading();
-                    });
+                    async void StartProtocolReading() {
+                        await HandleProtocolExceptionsAction(async delegate {
+                            await protocol.StartReading();
+                        });
+                    }
+
+                    StartProtocolReading();
                 }
 
-                StartProtocolReading();
-            }
+                var state = this.protocol.GetState();
 
-            switch (this.protocol.GetState()) {
-                case PXProtocolState.None:
-                case PXProtocolState.WaitingForConnection:
-                    this.protocol.SetupStream(exceptionsStream = new PXExceptionsFilterStream(stream));
-                    break;
-                default:
-                    throw new Exception("protocol wrong state to setup connection"); //TODO: make specific exception
+                if (state == PXProtocolState.Working) {
+                    this.exceptionsStream?.SwitchToErrorState();
+                    this.exceptionsStream?.Close();
+                }
+
+                switch (state) {
+                    case PXProtocolState.None:
+                    case PXProtocolState.WaitingForConnection:
+                    case PXProtocolState.Working:
+                        this.protocol.SetupStream(exceptionsStream = new PXExceptionsFilterStream(stream));
+                        break;
+                    default:
+                        throw new StreamSetupInWrongProtocolStateException(state);
+                }
             }
         }
 
         public void Stop() {
-            if (this.exceptionsStream == null) {
-                return;
+            lock (protocolOperationsLock) {
+                if (this.exceptionsStream == null) {
+                    return;
+                }
+
+                this.protocol?.Dispose();
+                this.protocol = null;
+
+                this.exceptionsStream.Close();
+                this.exceptionsStream = null;
             }
-
-            ResetProtocol();
-
-            this.exceptionsStream.Close();
-            this.exceptionsStream = null;
 
             ProcessClosingMessage();
 
             this.OnDisposed?.Invoke(this);
             this.OnDisposed = null;
-        }
-
-        private void ResetProtocol() {
-            this.protocol?.Dispose();
-            this.protocol = null;
         }
 
         public async Task Send<M>(M message) where M : struct {
@@ -205,10 +221,14 @@ namespace Pixie.Core
         }
 
         public void OnProtocolStateChanged() {
-            if (this.protocol.GetState() == PXProtocolState.WaitingForConnection) {
-                this.exceptionsStream.SwitchToErrorState();
+            lock (protocolOperationsLock) {
+                if (this.protocol.GetState() == PXProtocolState.WaitingForConnection) {
+                    this.exceptionsStream.SwitchToErrorState();
 
-                this.OnDisconnected?.Invoke(this);
+                    Task.Run(delegate {
+                        this.OnDisconnected?.Invoke(this);
+                    });
+                }
             }
         }
 

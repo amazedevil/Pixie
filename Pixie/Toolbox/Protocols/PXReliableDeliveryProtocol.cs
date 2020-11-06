@@ -86,7 +86,7 @@ namespace Pixie.Toolbox.Protocols
 
         private ConcurrentCounter messageCounter = new ConcurrentCounter();
 
-        private TaskCompletionSource<Stream> streamReadyTaskSource = new TaskCompletionSource<Stream>();
+        private volatile TaskCompletionSource<Stream> streamReadyTaskSource = new TaskCompletionSource<Stream>();
 
         public void Initialize(IPXProtocolContact feedbackReceiver) {
             this.contact = feedbackReceiver;
@@ -94,6 +94,10 @@ namespace Pixie.Toolbox.Protocols
 
         public void SetupStream(Stream stream) {
             lock (this) {
+                if (this.streamReadyTaskSource.Task.IsCompleted) {
+                    this.streamReadyTaskSource = new TaskCompletionSource<Stream>();
+                }
+
                 state = PXProtocolState.Working;
                 streamReadyTaskSource.SetResult(stream);
             }
@@ -291,7 +295,9 @@ namespace Pixie.Toolbox.Protocols
 
                 this.streamReadyTaskSource = new TaskCompletionSource<Stream>();
                 state = PXProtocolState.WaitingForConnection;
-                Task.Run(delegate { contact.OnProtocolStateChanged(); });
+                Task.Run(delegate {
+                    contact.OnProtocolStateChanged();
+                });
             }
         }
     }
