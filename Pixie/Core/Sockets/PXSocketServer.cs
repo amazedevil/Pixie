@@ -1,5 +1,6 @@
 ﻿using DryIoc;
 using Pixie.Core.Common.Streams;
+using Pixie.Core.Exceptions;
 using Pixie.Core.Services;
 using Pixie.Core.StreamWrappers;
 using System;
@@ -30,6 +31,7 @@ namespace Pixie.Core.Sockets
         private IDictionary<string, PXSocketClient> clients = new ConcurrentDictionary<string, PXSocketClient>();
         private PXLLProtocol pllProtocol = new PXLLProtocol();
         private CancellationTokenSource serverStopToken = new CancellationTokenSource();
+        private object clientRegistrationLock = new object();
 
         public PXSocketServer(string address, int port, IContainer container, int senderId, IEnumerable<IPXStreamWrapper> wrappers, Func<IPXProtocol> protocolProvider, bool reconnectAllowed) {
             this.address = IPAddress.Parse(address);
@@ -52,50 +54,7 @@ namespace Pixie.Core.Sockets
                     this.listener.Start();
 
                     while (true) {
-                        try {
-                            var tcpClient = await Task.Run(() => this.listener.AcceptTcpClientAsync(), serverStopToken.Token);
-
-                            //TODO: handshake process is synchronous, so if it hangs,
-                            //server stops receiving connections, it's not very good,
-                            //and probably it can be improved
-                            var stream = WrapStream(tcpClient.GetStream(), this.wrappers);
-
-                            var clientId = await pllProtocol.WelcomeFromReceiver(stream);
-
-                            if (clients.TryGetValue(clientId, out PXSocketClient existingClient)) {
-                                existingClient.SetupStream(stream);
-
-                                this.container.Logger().Info($"Reconnected client id: {clientId}");
-                            } else {
-                                PXSocketClient client = new PXSocketClient(
-                                    clientId,
-                                    socketServerContext,
-                                    this.protocolProvider
-                                );
-
-                                clients[client.Id] = client;
-
-                                if (!this.reconnectAllowed) {
-                                    client.OnDisconnected += delegate (PXSocketClient c) {
-                                        c.Stop();
-                                    };
-                                }
-
-                                client.OnDisposed += delegate (PXSocketClient c) {
-                                    RemoveClient(c);
-                                };
-
-                                client.SetupStream(stream);
-
-                                this.container.Logger().Info($"Connected client id: {client.Id}");
-                            }
-                        } catch (StreamSetupInWrongProtocolStateException e) {
-                            this.container.Logger().Exception(e);
-                        } catch (PXLLProtocol.PLLPVersionIncorrectException) {
-                            this.container.Logger().Error("Client with incorrect PLLP version tried to connect");
-                        } catch (PXLLProtocol.PLLPUknownException e) {
-                            this.container.Logger().Exception(e);
-                        }
+                        ProcessClient(await Task.Run(() => this.listener.AcceptTcpClientAsync(), serverStopToken.Token), socketServerContext);
                     }
                 } catch (TaskCanceledException cex) when (cex.CancellationToken == serverStopToken.Token) {
                     //server has been stopped, it's ok
@@ -103,13 +62,69 @@ namespace Pixie.Core.Sockets
                     this.container.Errors().Handle(ex, PXErrorHandlingService.Scope.SocketServer);
                 } finally {
                     listener?.Stop();
+                    
+                    lock (clientRegistrationLock) {
+                        foreach (var client in clients) {
+                            client.Value.Stop();
+                        }
 
-                    foreach (var client in clients) {
-                        client.Value.Stop();
+                        socketServerContext.Dispose();
                     }
 
                     this.container.Logger().Info("Socket server stopped");
                 }
+            }
+        }
+
+        private async void ProcessClient(TcpClient tcpClient, IResolverContext socketServerContext) {
+            try {
+                this.container.Logger().Info($"Incoming connection from: {((IPEndPoint)tcpClient.Client.RemoteEndPoint).Address}");
+
+                var stream = WrapStream(tcpClient.GetStream(), this.wrappers);
+
+                var clientId = await pllProtocol.WelcomeFromReceiver(stream);
+
+                lock (clientRegistrationLock) {
+                    if (socketServerContext.IsDisposed) {
+                        return;
+                    }
+
+                    if (clients.TryGetValue(clientId, out PXSocketClient existingClient)) {
+                        existingClient.SetupStream(stream);
+
+                        this.container.Logger().Info($"Reconnected client id: {clientId}");
+                    } else {
+                        PXSocketClient client = new PXSocketClient(
+                            clientId,
+                            socketServerContext,
+                            this.protocolProvider
+                        );
+
+                        clients[client.Id] = client;
+
+                        if (!this.reconnectAllowed) {
+                            client.OnDisconnected += delegate (PXSocketClient c) {
+                                c.Stop();
+                            };
+                        }
+
+                        client.OnDisposed += delegate (PXSocketClient c) {
+                            RemoveClient(c);
+                        };
+
+                        client.SetupStream(stream);
+
+                        this.container.Logger().Info($"Connected client id: {client.Id}");
+                    }
+                }
+            } catch (PXConnectionClosedRemoteException) {
+                this.container.Logger().Info("Connection closed by client");
+            } catch (StreamSetupInWrongProtocolStateException e) {
+                this.container.Logger().Exception(e);
+            } catch (PXLLProtocol.PLLPVersionIncorrectException) {
+                this.container.Logger().Error("Client with incorrect PLLP version tried to connect");
+            } catch (PXLLProtocol.PLLPUknownException e) {
+                this.container.Logger().Exception(e);
             }
         }
 
