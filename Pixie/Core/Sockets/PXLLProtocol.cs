@@ -1,4 +1,5 @@
 ﻿using Pixie.Core.Common.Streams;
+using Pixie.Core.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -51,6 +52,8 @@ namespace Pixie.Core.Sockets
                 return id.ToString();
             } catch (PLLPVersionIncorrectException) {
                 throw;
+            } catch (PXConnectionClosedRemoteException) {
+                throw;
             } catch (Exception e) {
                 throw new PLLPUknownException(e);
             }
@@ -69,7 +72,7 @@ namespace Pixie.Core.Sockets
                 if (await reader.ReadInt16() != PLLP_SIGNAL_VERSION_OK) {
                     throw new PLLPVersionIncorrectException();
                 }
-                                
+
                 if (reconnectingClientId != null) {
                     writer.Write(true);
                     writer.Write(Guid.Parse(reconnectingClientId));
@@ -81,6 +84,8 @@ namespace Pixie.Core.Sockets
                     return (await reader.ReadGuid()).ToString();
                 }
             } catch (PLLPVersionIncorrectException) {
+                throw;
+            } catch (PXConnectionClosedRemoteException) {
                 throw;
             } catch (Exception e) {
                 throw new PLLPUknownException(e);
