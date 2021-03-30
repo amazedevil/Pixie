@@ -38,15 +38,15 @@ namespace Pixie.Core
 
                 CloseRegistrations();
 
-                foreach (var module in GetServiceProviders()) {
-                    module.OnInitialize(this.container);
-                }
-
                 StartScheduler();
 
                 StartAgents();
 
                 StartEndpoints();
+
+                foreach (var module in GetServiceProviders()) {
+                    module.OnInitialize(this.container);
+                }
             } catch (Exception ex) {
                 this.container.Errors().Handle(ex, PXErrorHandlingService.Scope.PixieServer);
             }
