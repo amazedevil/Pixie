@@ -65,10 +65,6 @@ namespace Pixie.Core.Agents
             await this.client.Send(data);
         }
 
-        public async Task Send<M>(IEnumerable<string> clientIds, M data, int subscriptionId) where M : struct {
-            await Send(clientIds, data);
-        }
-
         public async Task<R> SendRequest<M, R>(string clientId, M data) where M : struct where R : struct {
             return await this.client.SendRequest<M, R>(data);
         }
