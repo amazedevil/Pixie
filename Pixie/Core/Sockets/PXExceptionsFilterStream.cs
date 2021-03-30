@@ -104,6 +104,13 @@ namespace Pixie.Core.Sockets
                     case InternalState.Error:
                         throw new PXConnectionLostException(this);
                 }
+            } catch (PXConnectionClosedRemoteException) {
+                switch (internalState) {
+                    case InternalState.Normal:
+                        throw;
+                    case InternalState.Error:
+                        throw new PXConnectionLostException(this);
+                }
             } catch (IOException) {
                 throw new PXConnectionLostException(this);
             }
