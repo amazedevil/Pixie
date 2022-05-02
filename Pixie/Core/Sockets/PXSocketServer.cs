@@ -80,7 +80,7 @@ namespace Pixie.Core.Sockets
             try {
                 this.container.Logger().Info($"Incoming connection from: {((IPEndPoint)tcpClient.Client.RemoteEndPoint).Address}");
 
-                var stream = WrapStream(tcpClient.GetStream(), this.wrappers);
+                var stream = WrapStream(new TcpClientAttachedStream(tcpClient), this.wrappers);
 
                 var clientId = await pllProtocol.WelcomeFromReceiver(stream);
 
